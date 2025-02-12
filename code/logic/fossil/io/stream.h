@@ -904,4 +904,224 @@ namespace fossil {
 
 #endif
 
+
+#ifdef __cplusplus
+}
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if defined(_WIN32)
+    #include <Python.h>
+#elif defined(__APPLE__)
+    #include <Python.h>
+#else
+    #if __has_include(<python3.13/Python.h>)
+        #include <python3.13/Python.h>
+    #elif __has_include(<python3.12/Python.h>)
+        #include <python3.12/Python.h>
+    #elif __has_include(<python3.11/Python.h>)
+        #include <python3.11/Python.h>
+    #elif __has_include(<python3.10/Python.h>)
+        #include <python3.10/Python.h>
+    #elif __has_include(<python3.9/Python.h>)
+        #include <python3.9/Python.h>
+    #elif __has_include(<python3.8/Python.h>)
+        #include <python3.8/Python.h>
+    #else
+        #error "Python 3.8 or later is required!"
+    #endif
+#endif
+
+
+/**
+ * Python wrapper for fossil_fstream_t structure.
+ * This structure is used to create a Python object that wraps the fossil_fstream_t structure,
+ * allowing it to be used in Python code.
+ */
+typedef struct {
+    PyObject_HEAD
+    fossil_fstream_t *stream;  // Pointer to the fossil_fstream_t structure
+} PyFossilStream;
+
+/**
+ * Initialize a new PyFossilStream object.
+ * This function is called when a new PyFossilStream object is created.
+ *
+ * @param self  Pointer to the PyFossilStream object to initialize.
+ * @param args  Tuple of arguments passed to the constructor.
+ * @param kwds  Dictionary of keyword arguments passed to the constructor.
+ * @return      0 on success, -1 on failure.
+ */
+static int PyFossilStream_init(PyFossilStream *self, PyObject *args, PyObject *kwds) {
+    self->stream = (fossil_fstream_t *)malloc(sizeof(fossil_fstream_t));
+    if (!self->stream) {
+        PyErr_SetString(PyExc_MemoryError, "Failed to allocate fossil_fstream_t");
+        return -1;
+    }
+    return 0;
+}
+
+/**
+ * Deallocate a PyFossilStream object.
+ * This function is called when a PyFossilStream object is deallocated.
+ *
+ * @param self  Pointer to the PyFossilStream object to deallocate.
+ */
+static void PyFossilStream_dealloc(PyFossilStream *self) {
+    if (self->stream) {
+        free(self->stream);
+    }
+    Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
+/**
+ * Open a file stream.
+ * This function is called from Python to open a file stream.
+ *
+ * @param self  Pointer to the PyFossilStream object.
+ * @param args  Tuple of arguments passed from Python (filename and mode).
+ * @return      PyLong object representing the result of the operation.
+ */
+static PyObject *PyFossilStream_open(PyFossilStream *self, PyObject *args) {
+    const char *filename;
+    const char *mode;
+    if (!PyArg_ParseTuple(args, "ss", &filename, &mode)) {
+        return NULL;
+    }
+    int32_t result = fossil_fstream_open(self->stream, filename, mode);
+    return PyLong_FromLong(result);
+}
+
+/**
+ * Close a file stream.
+ * This function is called from Python to close a file stream.
+ *
+ * @param self  Pointer to the PyFossilStream object.
+ * @return      Py_None.
+ */
+static PyObject *PyFossilStream_close(PyFossilStream *self) {
+    fossil_fstream_close(self->stream);
+    Py_RETURN_NONE;
+}
+
+/**
+ * Read from a file stream.
+ * This function is called from Python to read data from a file stream.
+ *
+ * @param self  Pointer to the PyFossilStream object.
+ * @param args  Tuple of arguments passed from Python (size and count).
+ * @return      PyBytes object containing the read data.
+ */
+static PyObject *PyFossilStream_read(PyFossilStream *self, PyObject *args) {
+    size_t size, count;
+    if (!PyArg_ParseTuple(args, "kk", &size, &count)) {
+        return NULL;
+    }
+    void *buffer = malloc(size * count);
+    if (!buffer) {
+        PyErr_SetString(PyExc_MemoryError, "Failed to allocate buffer");
+        return NULL;
+    }
+    size_t result = fossil_fstream_read(self->stream, buffer, size, count);
+    PyObject *py_result = PyBytes_FromStringAndSize((const char *)buffer, result * size);
+    free(buffer);
+    return py_result;
+}
+
+/**
+ * Write to a file stream.
+ * This function is called from Python to write data to a file stream.
+ *
+ * @param self  Pointer to the PyFossilStream object.
+ * @param args  Tuple of arguments passed from Python (buffer, size, and count).
+ * @return      PyLong object representing the result of the operation.
+ */
+static PyObject *PyFossilStream_write(PyFossilStream *self, PyObject *args) {
+    const char *buffer;
+    size_t size, count;
+    if (!PyArg_ParseTuple(args, "y#kk", &buffer, &size, &count)) {
+        return NULL;
+    }
+    size_t result = fossil_fstream_write(self->stream, buffer, size, count);
+    return PyLong_FromLong(result);
+}
+
+/**
+ * Define the methods of the PyFossilStream type.
+ * This array contains the methods that can be called on a PyFossilStream object from Python.
+ */
+static PyMethodDef PyFossilStream_methods[] = {
+    {"open", (PyCFunction)PyFossilStream_open, METH_VARARGS, "Open a file stream"},
+    {"close", (PyCFunction)PyFossilStream_close, METH_NOARGS, "Close a file stream"},
+    {"read", (PyCFunction)PyFossilStream_read, METH_VARARGS, "Read from a file stream"},
+    {"write", (PyCFunction)PyFossilStream_write, METH_VARARGS, "Write to a file stream"},
+    {NULL, NULL, 0, NULL}
+};
+
+/**
+ * Define the PyFossilStream type.
+ * This structure defines the PyFossilStream type, including its name, size, methods, and other properties.
+ */
+static PyTypeObject PyFossilStreamType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "fossil.PyFossilStream",
+    .tp_basicsize = sizeof(PyFossilStream),
+    .tp_itemsize = 0,
+    .tp_dealloc = (destructor)PyFossilStream_dealloc,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_doc = "Fossil file stream",
+    .tp_methods = PyFossilStream_methods,
+    .tp_init = (initproc)PyFossilStream_init,
+    .tp_new = PyType_GenericNew,
+};
+
+/**
+ * Define the module methods.
+ * This array contains the methods that can be called on the module itself from Python.
+ */
+static PyMethodDef module_methods[] = {
+    {NULL, NULL, 0, NULL}
+};
+
+/**
+ * Define the module.
+ * This structure defines the module, including its name, documentation, and methods.
+ */
+static struct PyModuleDef fossilmodule = {
+    PyModuleDef_HEAD_INIT,
+    "fossil",
+    "Fossil file stream module",
+    -1,
+    module_methods
+};
+
+/**
+ * Initialize the module.
+ * This function is called when the module is imported in Python.
+ *
+ * @return  Pointer to the module object, or NULL on failure.
+ */
+PyMODINIT_FUNC PyInit_fossil(void) {
+    PyObject *m;
+    if (PyType_Ready(&PyFossilStreamType) < 0) {
+        return NULL;
+    }
+    m = PyModule_Create(&fossilmodule);
+    if (m == NULL) {
+        return NULL;
+    }
+    Py_INCREF(&PyFossilStreamType);
+    PyModule_AddObject(m, "PyFossilStream", (PyObject *)&PyFossilStreamType);
+    return m;
+}
+
+#ifdef __cplusplus
+}
+#endif
+
+
+
 #endif /* FOSSIL_IO_FRAMEWORK_H */
