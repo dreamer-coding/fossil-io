@@ -935,209 +935,389 @@ extern "C" {
     #endif
 #endif
 
+static PyObject* py_fossil_fstream_open(PyObject* self, PyObject* args) {
+    const char* filename;
+    const char* mode;
+    fossil_fstream_t* stream = (fossil_fstream_t*)malloc(sizeof(fossil_fstream_t));
 
-/**
- * Python wrapper for fossil_fstream_t structure.
- * This structure is used to create a Python object that wraps the fossil_fstream_t structure,
- * allowing it to be used in Python code.
- */
-typedef struct {
-    PyObject_HEAD
-    fossil_fstream_t *stream;  // Pointer to the fossil_fstream_t structure
-} PyFossilStream;
-
-/**
- * Initialize a new PyFossilStream object.
- * This function is called when a new PyFossilStream object is created.
- *
- * @param self  Pointer to the PyFossilStream object to initialize.
- * @param args  Tuple of arguments passed to the constructor.
- * @param kwds  Dictionary of keyword arguments passed to the constructor.
- * @return      0 on success, -1 on failure.
- */
-static int PyFossilStream_init(PyFossilStream *self, PyObject *args, PyObject *kwds) {
-    const char *filename = NULL;
-    const char *mode = "r";
-    static char *kwlist[] = {"filename", "mode", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ss", kwlist, &filename, &mode)) {
-        return -1;
-    }
-
-    self->stream = (fossil_fstream_t *)malloc(sizeof(fossil_fstream_t));
-    if (!self->stream) {
-        PyErr_SetString(PyExc_MemoryError, "Failed to allocate fossil_fstream_t");
-        return -1;
-    }
-
-    if (filename) {
-        if (fossil_fstream_open(self->stream, filename, mode) != 0) {
-            PyErr_SetString(PyExc_IOError, "Failed to open file stream");
-            free(self->stream);
-            self->stream = NULL;
-            return -1;
-        }
-    } else {
-        self->stream->file = NULL;
-        self->stream->filename[0] = '\0';
-    }
-
-    return 0;
-}
-
-/**
- * Deallocate a PyFossilStream object.
- * This function is called when a PyFossilStream object is deallocated.
- *
- * @param self  Pointer to the PyFossilStream object to deallocate.
- */
-static void PyFossilStream_dealloc(PyFossilStream *self) {
-    if (self->stream) {
-        free(self->stream);
-    }
-    Py_TYPE(self)->tp_free((PyObject *)self);
-}
-
-/**
- * Open a file stream.
- * This function is called from Python to open a file stream.
- *
- * @param self  Pointer to the PyFossilStream object.
- * @param args  Tuple of arguments passed from Python (filename and mode).
- * @return      PyLong object representing the result of the operation.
- */
-static PyObject *PyFossilStream_open(PyFossilStream *self, PyObject *args) {
-    const char *filename;
-    const char *mode;
     if (!PyArg_ParseTuple(args, "ss", &filename, &mode)) {
         return NULL;
     }
-    int32_t result = fossil_fstream_open(self->stream, filename, mode);
-    return PyLong_FromLong(result);
+
+    int32_t result = fossil_fstream_open(stream, filename, mode);
+    if (result != 0) {
+        free(stream);
+        Py_RETURN_NONE;
+    }
+
+    return PyCapsule_New((void*)stream, "fossil_fstream_t", NULL);
 }
 
-/**
- * Close a file stream.
- * This function is called from Python to close a file stream.
- *
- * @param self  Pointer to the PyFossilStream object.
- * @return      Py_None.
- */
-static PyObject *PyFossilStream_close(PyFossilStream *self) {
-    fossil_fstream_close(self->stream);
+static PyObject* py_fossil_fstream_close(PyObject* self, PyObject* args) {
+    PyObject* py_stream;
+    if (!PyArg_ParseTuple(args, "O", &py_stream)) {
+        return NULL;
+    }
+
+    fossil_fstream_t* stream = (fossil_fstream_t*)PyCapsule_GetPointer(py_stream, "fossil_fstream_t");
+    if (stream) {
+        fossil_fstream_close(stream);
+        free(stream);
+    }
+
     Py_RETURN_NONE;
 }
 
-/**
- * Read from a file stream.
- * This function is called from Python to read data from a file stream.
- *
- * @param self  Pointer to the PyFossilStream object.
- * @param args  Tuple of arguments passed from Python (size and count).
- * @return      PyBytes object containing the read data.
- */
-static PyObject *PyFossilStream_read(PyFossilStream *self, PyObject *args) {
+static PyObject* py_fossil_fstream_read(PyObject* self, PyObject* args) {
+    PyObject* py_stream;
     size_t size, count;
-    if (!PyArg_ParseTuple(args, "kk", &size, &count)) {
+    if (!PyArg_ParseTuple(args, "Onn", &py_stream, &size, &count)) {
         return NULL;
     }
-    void *buffer = malloc(size * count);
-    if (!buffer) {
-        PyErr_SetString(PyExc_MemoryError, "Failed to allocate buffer");
-        return NULL;
+
+    fossil_fstream_t* stream = (fossil_fstream_t*)PyCapsule_GetPointer(py_stream, "fossil_fstream_t");
+    if (!stream) {
+        Py_RETURN_NONE;
     }
-    size_t result = fossil_fstream_read(self->stream, buffer, size, count);
-    PyObject *py_result = PyBytes_FromStringAndSize((const char *)buffer, result * size);
+
+    void* buffer = malloc(size * count);
+    size_t read_count = fossil_fstream_read(stream, buffer, size, count);
+
+    PyObject* result = PyBytes_FromStringAndSize((const char*)buffer, read_count * size);
     free(buffer);
-    return py_result;
+    return result;
 }
 
-/**
- * Write to a file stream.
- * This function is called from Python to write data to a file stream.
- *
- * @param self  Pointer to the PyFossilStream object.
- * @param args  Tuple of arguments passed from Python (buffer, size, and count).
- * @return      PyLong object representing the result of the operation.
- */
-static PyObject *PyFossilStream_write(PyFossilStream *self, PyObject *args) {
-    const char *buffer;
+static PyObject* py_fossil_fstream_write(PyObject* self, PyObject* args) {
+    PyObject* py_stream;
+    const char* buffer;
     size_t size, count;
-    if (!PyArg_ParseTuple(args, "y#kk", &buffer, &size, &count)) {
+    if (!PyArg_ParseTuple(args, "Os#nn", &py_stream, &buffer, &size, &count)) {
         return NULL;
     }
-    size_t result = fossil_fstream_write(self->stream, buffer, size, count);
+
+    fossil_fstream_t* stream = (fossil_fstream_t*)PyCapsule_GetPointer(py_stream, "fossil_fstream_t");
+    if (!stream) {
+        Py_RETURN_NONE;
+    }
+
+    size_t written_count = fossil_fstream_write(stream, buffer, size, count);
+    return PyLong_FromSize_t(written_count);
+}
+
+static PyObject* py_fossil_fstream_append(PyObject* self, PyObject* args) {
+    PyObject* py_stream;
+    const char* buffer;
+    size_t size;
+    int32_t count;
+    if (!PyArg_ParseTuple(args, "Os#ni", &py_stream, &buffer, &size, &count)) {
+        return NULL;
+    }
+
+    fossil_fstream_t* stream = (fossil_fstream_t*)PyCapsule_GetPointer(py_stream, "fossil_fstream_t");
+    if (!stream) {
+        Py_RETURN_NONE;
+    }
+
+    int32_t result = fossil_fstream_append(stream, buffer, size, count);
     return PyLong_FromLong(result);
 }
 
-/**
- * Define the methods of the PyFossilStream type.
- * This array contains the methods that can be called on a PyFossilStream object from Python.
- */
-static PyMethodDef PyFossilStream_methods[] = {
-    {"open", (PyCFunction)PyFossilStream_open, METH_VARARGS, "Open a file stream"},
-    {"close", (PyCFunction)PyFossilStream_close, METH_NOARGS, "Close a file stream"},
-    {"read", (PyCFunction)PyFossilStream_read, METH_VARARGS, "Read from a file stream"},
-    {"write", (PyCFunction)PyFossilStream_write, METH_VARARGS, "Write to a file stream"},
+static PyObject* py_fossil_fstream_seek(PyObject* self, PyObject* args) {
+    PyObject* py_stream;
+    int64_t offset;
+    int32_t origin;
+    if (!PyArg_ParseTuple(args, "OLi", &py_stream, &offset, &origin)) {
+        return NULL;
+    }
+
+    fossil_fstream_t* stream = (fossil_fstream_t*)PyCapsule_GetPointer(py_stream, "fossil_fstream_t");
+    if (!stream) {
+        Py_RETURN_NONE;
+    }
+
+    int32_t result = fossil_fstream_seek(stream, offset, origin);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_tell(PyObject* self, PyObject* args) {
+    PyObject* py_stream;
+    if (!PyArg_ParseTuple(args, "O", &py_stream)) {
+        return NULL;
+    }
+
+    fossil_fstream_t* stream = (fossil_fstream_t*)PyCapsule_GetPointer(py_stream, "fossil_fstream_t");
+    if (!stream) {
+        Py_RETURN_NONE;
+    }
+
+    int32_t position = fossil_fstream_tell(stream);
+    return PyLong_FromLong(position);
+}
+
+static PyObject* py_fossil_fstream_save(PyObject* self, PyObject* args) {
+    PyObject* py_stream;
+    const char* new_filename;
+    if (!PyArg_ParseTuple(args, "Os", &py_stream, &new_filename)) {
+        return NULL;
+    }
+
+    fossil_fstream_t* stream = (fossil_fstream_t*)PyCapsule_GetPointer(py_stream, "fossil_fstream_t");
+    if (!stream) {
+        Py_RETURN_NONE;
+    }
+
+    int32_t result = fossil_fstream_save(stream, new_filename);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_copy(PyObject* self, PyObject* args) {
+    const char* source_filename;
+    const char* destination_filename;
+    if (!PyArg_ParseTuple(args, "ss", &source_filename, &destination_filename)) {
+        return NULL;
+    }
+
+    int32_t result = fossil_fstream_copy(source_filename, destination_filename);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_remove(PyObject* self, PyObject* args) {
+    const char* filename;
+    if (!PyArg_ParseTuple(args, "s", &filename)) {
+        return NULL;
+    }
+
+    int32_t result = fossil_fstream_remove(filename);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_rename(PyObject* self, PyObject* args) {
+    const char* old_filename;
+    const char* new_filename;
+    if (!PyArg_ParseTuple(args, "ss", &old_filename, &new_filename)) {
+        return NULL;
+    }
+
+    int32_t result = fossil_fstream_rename(old_filename, new_filename);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_flush(PyObject* self, PyObject* args) {
+    PyObject* py_stream;
+    if (!PyArg_ParseTuple(args, "O", &py_stream)) {
+        return NULL;
+    }
+
+    fossil_fstream_t* stream = (fossil_fstream_t*)PyCapsule_GetPointer(py_stream, "fossil_fstream_t");
+    if (!stream) {
+        Py_RETURN_NONE;
+    }
+
+    int32_t result = fossil_fstream_flush(stream);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_setpos(PyObject* self, PyObject* args) {
+    PyObject* py_stream;
+    int32_t pos;
+    if (!PyArg_ParseTuple(args, "Oi", &py_stream, &pos)) {
+        return NULL;
+    }
+
+    fossil_fstream_t* stream = (fossil_fstream_t*)PyCapsule_GetPointer(py_stream, "fossil_fstream_t");
+    if (!stream) {
+        Py_RETURN_NONE;
+    }
+
+    int32_t result = fossil_fstream_setpos(stream, pos);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_getpos(PyObject* self, PyObject* args) {
+    PyObject* py_stream;
+    if (!PyArg_ParseTuple(args, "O", &py_stream)) {
+        return NULL;
+    }
+
+    fossil_fstream_t* stream = (fossil_fstream_t*)PyCapsule_GetPointer(py_stream, "fossil_fstream_t");
+    if (!stream) {
+        Py_RETURN_NONE;
+    }
+
+    int32_t pos;
+    int32_t result = fossil_fstream_getpos(stream, &pos);
+    if (result != 0) {
+        Py_RETURN_NONE;
+    }
+
+    return PyLong_FromLong(pos);
+}
+
+static PyObject* py_fossil_fstream_rotate(PyObject* self, PyObject* args) {
+    const char* filename;
+    int32_t n;
+    if (!PyArg_ParseTuple(args, "si", &filename, &n)) {
+        return NULL;
+    }
+
+    int32_t result = fossil_fstream_rotate(filename, n);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_backup(PyObject* self, PyObject* args) {
+    const char* filename;
+    const char* backup_suffix;
+    if (!PyArg_ParseTuple(args, "ss", &filename, &backup_suffix)) {
+        return NULL;
+    }
+
+    int32_t result = fossil_fstream_backup(filename, backup_suffix);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_file_exists(PyObject* self, PyObject* args) {
+    const char* filename;
+    if (!PyArg_ParseTuple(args, "s", &filename)) {
+        return NULL;
+    }
+
+    int32_t result = fossil_fstream_file_exists(filename);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_get_size(PyObject* self, PyObject* args) {
+    PyObject* py_stream;
+    if (!PyArg_ParseTuple(args, "O", &py_stream)) {
+        return NULL;
+    }
+
+    fossil_fstream_t* stream = (fossil_fstream_t*)PyCapsule_GetPointer(py_stream, "fossil_fstream_t");
+    if (!stream) {
+        Py_RETURN_NONE;
+    }
+
+    int32_t size = fossil_fstream_get_size(stream);
+    return PyLong_FromLong(size);
+}
+
+static PyObject* py_fossil_fstream_delete(PyObject* self, PyObject* args) {
+    const char* filename;
+    if (!PyArg_ParseTuple(args, "s", &filename)) {
+        return NULL;
+    }
+
+    int32_t result = fossil_fstream_delete(filename);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_get_type(PyObject* self, PyObject* args) {
+    const char* filename;
+    if (!PyArg_ParseTuple(args, "s", &filename)) {
+        return NULL;
+    }
+
+    int result = fossil_fstream_get_type(filename);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_is_readable(PyObject* self, PyObject* args) {
+    const char* filename;
+    if (!PyArg_ParseTuple(args, "s", &filename)) {
+        return NULL;
+    }
+
+    int32_t result = fossil_fstream_is_readable(filename);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_is_writable(PyObject* self, PyObject* args) {
+    const char* filename;
+    if (!PyArg_ParseTuple(args, "s", &filename)) {
+        return NULL;
+    }
+
+    int32_t result = fossil_fstream_is_writable(filename);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_is_executable(PyObject* self, PyObject* args) {
+    const char* filename;
+    if (!PyArg_ParseTuple(args, "s", &filename)) {
+        return NULL;
+    }
+
+    int32_t result = fossil_fstream_is_executable(filename);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_set_permissions(PyObject* self, PyObject* args) {
+    const char* filename;
+    int32_t mode;
+    if (!PyArg_ParseTuple(args, "si", &filename, &mode)) {
+        return NULL;
+    }
+
+    int32_t result = fossil_fstream_set_permissions(filename, mode);
+    return PyLong_FromLong(result);
+}
+
+static PyObject* py_fossil_fstream_get_permissions(PyObject* self, PyObject* args) {
+    const char* filename;
+    if (!PyArg_ParseTuple(args, "s", &filename)) {
+        return NULL;
+    }
+
+    int32_t mode;
+    int32_t result = fossil_fstream_get_permissions(filename, &mode);
+    if (result != 0) {
+        Py_RETURN_NONE;
+    }
+
+    return PyLong_FromLong(mode);
+}
+
+static PyMethodDef FossilMethods[] = {
+    {"fstream_open", py_fossil_fstream_open, METH_VARARGS, "Open a file stream."},
+    {"fstream_close", py_fossil_fstream_close, METH_VARARGS, "Close a file stream."},
+    {"fstream_read", py_fossil_fstream_read, METH_VARARGS, "Read from a file stream."},
+    {"fstream_write", py_fossil_fstream_write, METH_VARARGS, "Write to a file stream."},
+    {"fstream_append", py_fossil_fstream_append, METH_VARARGS, "Append to a file stream."},
+    {"fstream_seek", py_fossil_fstream_seek, METH_VARARGS, "Seek in a file stream."},
+    {"fstream_tell", py_fossil_fstream_tell, METH_VARARGS, "Tell position in a file stream."},
+    {"fstream_save", py_fossil_fstream_save, METH_VARARGS, "Save a file stream."},
+    {"fstream_copy", py_fossil_fstream_copy, METH_VARARGS, "Copy a file stream."},
+    {"fstream_remove", py_fossil_fstream_remove, METH_VARARGS, "Remove a file stream."},
+    {"fstream_rename", py_fossil_fstream_rename, METH_VARARGS, "Rename a file stream."},
+    {"fstream_flush", py_fossil_fstream_flush, METH_VARARGS, "Flush a file stream."},
+    {"fstream_setpos", py_fossil_fstream_setpos, METH_VARARGS, "Set position in a file stream."},
+    {"fstream_getpos", py_fossil_fstream_getpos, METH_VARARGS, "Get position in a file stream."},
+    {"fstream_rotate", py_fossil_fstream_rotate, METH_VARARGS, "Rotate a file stream."},
+    {"fstream_backup", py_fossil_fstream_backup, METH_VARARGS, "Backup a file stream."},
+    {"fstream_file_exists", py_fossil_fstream_file_exists, METH_VARARGS, "Check if a file stream exists."},
+    {"fstream_get_size", py_fossil_fstream_get_size, METH_VARARGS, "Get size of a file stream."},
+    {"fstream_delete", py_fossil_fstream_delete, METH_VARARGS, "Delete a file stream."},
+    {"fstream_get_type", py_fossil_fstream_get_type, METH_VARARGS, "Get type of a file stream."},
+    {"fstream_is_readable", py_fossil_fstream_is_readable, METH_VARARGS, "Check if a file stream is readable."},
+    {"fstream_is_writable", py_fossil_fstream_is_writable, METH_VARARGS, "Check if a file stream is writable."},
+    {"fstream_is_executable", py_fossil_fstream_is_executable, METH_VARARGS, "Check if a file stream is executable."},
+    {"fstream_set_permissions", py_fossil_fstream_set_permissions, METH_VARARGS, "Set permissions of a file stream."},
+    {"fstream_get_permissions", py_fossil_fstream_get_permissions, METH_VARARGS, "Get permissions of a file stream."},
     {NULL, NULL, 0, NULL}
 };
 
-/**
- * Define the PyFossilStream type.
- * This structure defines the PyFossilStream type, including its name, size, methods, and other properties.
- */
-static PyTypeObject PyFossilStreamType = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "fossil.PyFossilStream",
-    .tp_basicsize = sizeof(PyFossilStream),
-    .tp_itemsize = 0,
-    .tp_dealloc = (destructor)PyFossilStream_dealloc,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_doc = "Fossil file stream",
-    .tp_methods = PyFossilStream_methods,
-    .tp_init = (initproc)PyFossilStream_init,
-    .tp_new = PyType_GenericNew,
-};
-
-/**
- * Define the module methods.
- * This array contains the methods that can be called on the module itself from Python.
- */
-static PyMethodDef module_methods[] = {
-    {NULL, NULL, 0, NULL}
-};
-
-/**
- * Define the module.
- * This structure defines the module, including its name, documentation, and methods.
- */
 static struct PyModuleDef fossilmodule = {
     PyModuleDef_HEAD_INIT,
     "fossil",
-    "Fossil file stream module",
+    NULL,
     -1,
-    module_methods
+    FossilMethods
 };
 
-/**
- * Initialize the module.
- * This function is called when the module is imported in Python.
- *
- * @return  Pointer to the module object, or NULL on failure.
- */
 PyMODINIT_FUNC PyInit_fossil(void) {
-    PyObject *m;
-    if (PyType_Ready(&PyFossilStreamType) < 0) {
-        return NULL;
-    }
-    m = PyModule_Create(&fossilmodule);
-    if (m == NULL) {
-        return NULL;
-    }
-    Py_INCREF(&PyFossilStreamType);
-    PyModule_AddObject(m, "PyFossilStream", (PyObject *)&PyFossilStreamType);
-    return m;
+    return PyModule_Create(&fossilmodule);
 }
+
 
 #ifdef __cplusplus
 }
