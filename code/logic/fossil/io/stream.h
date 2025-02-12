@@ -956,11 +956,32 @@ typedef struct {
  * @return      0 on success, -1 on failure.
  */
 static int PyFossilStream_init(PyFossilStream *self, PyObject *args, PyObject *kwds) {
+    const char *filename = NULL;
+    const char *mode = "r";
+    static char *kwlist[] = {"filename", "mode", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ss", kwlist, &filename, &mode)) {
+        return -1;
+    }
+
     self->stream = (fossil_fstream_t *)malloc(sizeof(fossil_fstream_t));
     if (!self->stream) {
         PyErr_SetString(PyExc_MemoryError, "Failed to allocate fossil_fstream_t");
         return -1;
     }
+
+    if (filename) {
+        if (fossil_fstream_open(self->stream, filename, mode) != 0) {
+            PyErr_SetString(PyExc_IOError, "Failed to open file stream");
+            free(self->stream);
+            self->stream = NULL;
+            return -1;
+        }
+    } else {
+        self->stream->file = NULL;
+        self->stream->filename[0] = '\0';
+    }
+
     return 0;
 }
 
