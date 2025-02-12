@@ -916,7 +916,7 @@ extern "C" {
 #if defined(_WIN32)
     #include <Python.h>
 #elif defined(__APPLE__)
-    #include <Python.h>
+    #include <Python/Python.h>
 #else
     #if __has_include(<python3.13/Python.h>)
         #include <python3.13/Python.h>
@@ -935,7 +935,9 @@ extern "C" {
     #endif
 #endif
 
+
 static PyObject* py_fossil_fstream_open(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* filename;
     const char* mode;
     fossil_fstream_t* stream = (fossil_fstream_t*)malloc(sizeof(fossil_fstream_t));
@@ -954,6 +956,7 @@ static PyObject* py_fossil_fstream_open(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_close(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     PyObject* py_stream;
     if (!PyArg_ParseTuple(args, "O", &py_stream)) {
         return NULL;
@@ -969,6 +972,7 @@ static PyObject* py_fossil_fstream_close(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_read(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     PyObject* py_stream;
     size_t size, count;
     if (!PyArg_ParseTuple(args, "Onn", &py_stream, &size, &count)) {
@@ -989,6 +993,7 @@ static PyObject* py_fossil_fstream_read(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_write(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     PyObject* py_stream;
     const char* buffer;
     size_t size, count;
@@ -1006,6 +1011,7 @@ static PyObject* py_fossil_fstream_write(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_append(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     PyObject* py_stream;
     const char* buffer;
     size_t size;
@@ -1024,6 +1030,7 @@ static PyObject* py_fossil_fstream_append(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_seek(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     PyObject* py_stream;
     int64_t offset;
     int32_t origin;
@@ -1041,6 +1048,7 @@ static PyObject* py_fossil_fstream_seek(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_tell(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     PyObject* py_stream;
     if (!PyArg_ParseTuple(args, "O", &py_stream)) {
         return NULL;
@@ -1056,6 +1064,7 @@ static PyObject* py_fossil_fstream_tell(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_save(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     PyObject* py_stream;
     const char* new_filename;
     if (!PyArg_ParseTuple(args, "Os", &py_stream, &new_filename)) {
@@ -1072,6 +1081,7 @@ static PyObject* py_fossil_fstream_save(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_copy(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* source_filename;
     const char* destination_filename;
     if (!PyArg_ParseTuple(args, "ss", &source_filename, &destination_filename)) {
@@ -1083,6 +1093,7 @@ static PyObject* py_fossil_fstream_copy(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_remove(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* filename;
     if (!PyArg_ParseTuple(args, "s", &filename)) {
         return NULL;
@@ -1093,6 +1104,7 @@ static PyObject* py_fossil_fstream_remove(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_rename(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* old_filename;
     const char* new_filename;
     if (!PyArg_ParseTuple(args, "ss", &old_filename, &new_filename)) {
@@ -1104,6 +1116,7 @@ static PyObject* py_fossil_fstream_rename(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_flush(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     PyObject* py_stream;
     if (!PyArg_ParseTuple(args, "O", &py_stream)) {
         return NULL;
@@ -1119,6 +1132,7 @@ static PyObject* py_fossil_fstream_flush(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_setpos(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     PyObject* py_stream;
     int32_t pos;
     if (!PyArg_ParseTuple(args, "Oi", &py_stream, &pos)) {
@@ -1135,6 +1149,7 @@ static PyObject* py_fossil_fstream_setpos(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_getpos(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     PyObject* py_stream;
     if (!PyArg_ParseTuple(args, "O", &py_stream)) {
         return NULL;
@@ -1155,6 +1170,7 @@ static PyObject* py_fossil_fstream_getpos(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_rotate(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* filename;
     int32_t n;
     if (!PyArg_ParseTuple(args, "si", &filename, &n)) {
@@ -1166,6 +1182,7 @@ static PyObject* py_fossil_fstream_rotate(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_backup(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* filename;
     const char* backup_suffix;
     if (!PyArg_ParseTuple(args, "ss", &filename, &backup_suffix)) {
@@ -1177,6 +1194,7 @@ static PyObject* py_fossil_fstream_backup(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_file_exists(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* filename;
     if (!PyArg_ParseTuple(args, "s", &filename)) {
         return NULL;
@@ -1187,6 +1205,7 @@ static PyObject* py_fossil_fstream_file_exists(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_get_size(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     PyObject* py_stream;
     if (!PyArg_ParseTuple(args, "O", &py_stream)) {
         return NULL;
@@ -1202,6 +1221,7 @@ static PyObject* py_fossil_fstream_get_size(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_delete(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* filename;
     if (!PyArg_ParseTuple(args, "s", &filename)) {
         return NULL;
@@ -1212,6 +1232,7 @@ static PyObject* py_fossil_fstream_delete(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_get_type(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* filename;
     if (!PyArg_ParseTuple(args, "s", &filename)) {
         return NULL;
@@ -1222,6 +1243,7 @@ static PyObject* py_fossil_fstream_get_type(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_is_readable(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* filename;
     if (!PyArg_ParseTuple(args, "s", &filename)) {
         return NULL;
@@ -1232,6 +1254,7 @@ static PyObject* py_fossil_fstream_is_readable(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_is_writable(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* filename;
     if (!PyArg_ParseTuple(args, "s", &filename)) {
         return NULL;
@@ -1242,6 +1265,7 @@ static PyObject* py_fossil_fstream_is_writable(PyObject* self, PyObject* args) {
 }
 
 static PyObject* py_fossil_fstream_is_executable(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* filename;
     if (!PyArg_ParseTuple(args, "s", &filename)) {
         return NULL;
@@ -1252,6 +1276,7 @@ static PyObject* py_fossil_fstream_is_executable(PyObject* self, PyObject* args)
 }
 
 static PyObject* py_fossil_fstream_set_permissions(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* filename;
     int32_t mode;
     if (!PyArg_ParseTuple(args, "si", &filename, &mode)) {
@@ -1263,6 +1288,7 @@ static PyObject* py_fossil_fstream_set_permissions(PyObject* self, PyObject* arg
 }
 
 static PyObject* py_fossil_fstream_get_permissions(PyObject* self, PyObject* args) {
+    (void)self; // Unused parameter
     const char* filename;
     if (!PyArg_ParseTuple(args, "s", &filename)) {
         return NULL;
