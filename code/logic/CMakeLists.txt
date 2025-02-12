@@ -19,11 +19,17 @@ set(TEST_CODE
     network.c
 )
 
+# Find Python 3
+find_package(Python3 REQUIRED COMPONENTS Development)
+
 # Create the library target
 add_library(fossil-io STATIC ${TEST_CODE} ${HEADER_FILES})
 
 # Link the math library
 target_link_libraries(fossil-io PUBLIC m)
+
+# Link to Python 3 library
+target_link_libraries(fossil-io PUBLIC Python3::Python)
 
 # Link to Winsock library only on Windows
 if(WIN32)
