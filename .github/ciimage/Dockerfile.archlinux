@@ -15,6 +15,7 @@ RUN pacman -Syu --noconfirm && \
     wget \
     python \
     python-pip \
+    python-devel \
     git \
     meson \
     ninja && \

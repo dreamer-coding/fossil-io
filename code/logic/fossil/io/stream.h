@@ -935,7 +935,6 @@ extern "C" {
     #endif
 #endif
 
-
 static PyObject* py_fossil_fstream_open(PyObject* self, PyObject* args) {
     (void)self; // Unused parameter
     const char* filename;

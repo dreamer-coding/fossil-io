@@ -15,8 +15,7 @@ RUN apt-get update && \
     gdb \
     llvm \
     libstdc++-10-dev \
-    rustc \
-    cargo \
+    python3-dev \
     wget \
     python3 \
     python3-pip \
