@@ -76,6 +76,9 @@ void fossil_io_putchar(char c);
  */
 void fossil_io_putchar_color(char c, const char *color);
 
+// for testing only
+const char* fossil_io_get_last_output(void);
+
 #ifdef __cplusplus
 }
 /**

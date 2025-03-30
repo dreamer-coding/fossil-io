@@ -20,6 +20,18 @@
 
 #define FOSSIL_IO_BUFFER_SIZE 1000
 
+static char fossil_io_output_buffer[FOSSIL_IO_BUFFER_SIZE] = {0};
+
+// Getter function to retrieve the last printed output
+const char* fossil_io_get_last_output(void) {
+    return fossil_io_output_buffer;
+}
+
+// Internal function to store output for testing
+static void fossil_io_store_output(const char *format, va_list args) {
+    vsnprintf(fossil_io_output_buffer, sizeof(fossil_io_output_buffer), format, args);
+}
+
 // Function to apply color
 void fossil_io_apply_color(const char *color) {
     if (strcmp(color, "red") == 0) {
@@ -123,9 +135,14 @@ void fossil_io_print_with_attributes(const char *format, ...) {
 void fossil_io_print_color(const char *color, const char *format, ...) {
     va_list args;
     va_start(args, format);
+
+    // Store for test verification
+    fossil_io_store_output(format, args);
+
     printf("%s", color);
     vprintf(format, args);
     printf("%s", FOSSIL_IO_COLOR_RESET);
+
     va_end(args);
 }
 
@@ -135,6 +152,10 @@ void fossil_io_puts(const char *str) {
         char sanitized_str[FOSSIL_IO_BUFFER_SIZE];
         strncpy(sanitized_str, str, sizeof(sanitized_str));
         sanitized_str[sizeof(sanitized_str) - 1] = '\0'; // Ensure null termination
+        
+        // Store for test verification
+        strncpy(fossil_io_output_buffer, sanitized_str, sizeof(fossil_io_output_buffer) - 1);
+        fossil_io_output_buffer[sizeof(fossil_io_output_buffer) - 1] = '\0';
         
         // Print the sanitized string with attributes
         fossil_io_print_with_attributes(sanitized_str);
@@ -153,17 +174,17 @@ void fossil_io_putchar_color(char c, const char *color) {
     printf("%s%c%s", color, c, FOSSIL_IO_COLOR_RESET);
 }
 
-// Function to print sanitized formatted output with attributes
+
+// Function to print a formatted string
 void fossil_io_printf(const char *format, ...) {
     va_list args;
     va_start(args, format);
 
-    // Create a buffer to hold the formatted string
-    char buffer[FOSSIL_IO_BUFFER_SIZE];
-    vsnprintf(buffer, sizeof(buffer), format, args);
+    // Store for test verification
+    fossil_io_store_output(format, args);
 
-    // Print the sanitized output with attributes
-    fossil_io_print_with_attributes(buffer);
+    // Print to console
+    vprintf(format, args);
 
     va_end(args);
 }
