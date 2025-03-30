@@ -98,4 +98,3 @@ FOSSIL_TEST_GROUP(cpp_output_tests) {
  
     FOSSIL_TEST_REGISTER(cpp_output_suite);
 }
- 
