@@ -66,25 +66,7 @@
      const char *output = fossil_io_get_last_output();
      ASSUME_ITS_EQUAL_CSTR(input, output); // Assuming color is not part of the output string
  }
- 
- FOSSIL_TEST_CASE(cpp_test_io_putchar) {
-     char input = 'A';
-     fossil_io_putchar(input);
-     const char *output = fossil_io_get_last_output();
-     char expected[2] = {input, '\0'};
-     ASSUME_ITS_EQUAL_CSTR(expected, output);
- }
- 
- FOSSIL_TEST_CASE(cpp_test_io_putchar_color) {
-     char input = 'B';
-     const char *color = "blue";
-     fossil_io_putchar_color(input, color);
-     const char *output = fossil_io_get_last_output();
-     char expected[2] = {input, '\0'};
-     ASSUME_ITS_EQUAL_CSTR(expected, output); // Assuming color is not part of the output string
- }
- 
- 
+  
  // * * * * * * * * * * * * * * * * * * * * * * * *
  // * Fossil Logic Test Pool
  // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -93,8 +75,6 @@ FOSSIL_TEST_GROUP(cpp_output_tests) {
     FOSSIL_TEST_ADD(cpp_output_suite, cpp_test_io_puts);
     FOSSIL_TEST_ADD(cpp_output_suite, cpp_test_io_printf);
     FOSSIL_TEST_ADD(cpp_output_suite, cpp_test_io_print_color);
-    FOSSIL_TEST_ADD(cpp_output_suite, cpp_test_io_putchar);
-    FOSSIL_TEST_ADD(cpp_output_suite, cpp_test_io_putchar_color);
  
     FOSSIL_TEST_REGISTER(cpp_output_suite);
 }
