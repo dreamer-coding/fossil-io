@@ -180,20 +180,29 @@ FOSSIL_TEST_CASE(c_test_stream_get_permissions) {
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_get_permissions(filename, &mode));
 }
 
-FOSSIL_TEST_CASE(c_test_stream_remove_file) {
-    const char *filename = "testfile_remove.txt";
-    const char *content = "This is a test.";
+FOSSIL_TEST_CASE(c_test_stream_get_modification_time) {
+    const char *filename = "testfile_modification_time.txt";
 
     // Create the file
     ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
-    fossil_fstream_write(&c_stream, content, strlen(content), 1);
     fossil_fstream_close(&c_stream);
 
-    // Remove the file
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_remove(filename));
+    // Get the modification time
+    int64_t mod_time = fossil_fstream_get_modified_time(filename);
+    ASSUME_ITS_TRUE(mod_time > 0);
+    ASSUME_ITS_TRUE(mod_time < 10000000000);  // Check if the time is reasonable
+}
 
-    // Check if the file does not exist
-    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_file_exists(filename));
+FOSSIL_TEST_CASE(c_test_stream_get_creation_time) {
+    const char *filename = "testfile_creation_time.txt";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+    fossil_fstream_close(&c_stream);
+
+    // Get the creation time
+    int64_t creation_time = fossil_fstream_get_creation_time(filename);
+    ASSUME_ITS_TRUE(creation_time > 0);
 }
 
 FOSSIL_TEST_CASE(c_test_stream_flush_file) {
@@ -233,6 +242,137 @@ FOSSIL_TEST_CASE(c_test_stream_setpos_and_getpos) {
     fossil_fstream_close(&c_stream);
 }
 
+FOSSIL_TEST_CASE(c_test_stream_truncate_file) {
+    const char *filename = "testfile_truncate.txt";
+    const char *content = "This is a test.";
+
+    // Create the file and write content
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+    fossil_fstream_write(&c_stream, content, strlen(content), 1);
+    fossil_fstream_close(&c_stream);
+
+    // Truncate the file to a smaller size
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_truncate(filename, 4));
+
+    // Read the truncated content
+    char buffer[1024] = {0};
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "r"));
+    fossil_fstream_read(&c_stream, buffer, sizeof(buffer), 1);
+    fossil_fstream_close(&c_stream);
+
+    // Verify the truncated content
+    ASSUME_ITS_EQUAL_CSTR("This", buffer);
+}
+
+FOSSIL_TEST_CASE(c_test_stream_lock_and_unlock_file) {
+    const char *filename = "testfile_lock.txt";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+
+    // Lock the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_lock(&c_stream));
+
+    // Unlock the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_unlock(&c_stream));
+
+    // Close the file
+    fossil_fstream_close(&c_stream);
+}
+
+FOSSIL_TEST_CASE(c_test_stream_sync_file) {
+    const char *filename = "testfile_sync.txt";
+    const char *content = "This is a test.";
+
+    // Create the file and write content
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+    fossil_fstream_write(&c_stream, content, strlen(content), 1);
+
+    // Sync the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_sync(&c_stream));
+
+    // Close the file
+    fossil_fstream_close(&c_stream);
+}
+
+FOSSIL_TEST_CASE(c_test_stream_set_buffering) {
+    const char *filename = "testfile_buffering.txt";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+
+    // Enable buffering
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_set_buffering(&c_stream, 1));
+
+    // Disable buffering
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_set_buffering(&c_stream, 0));
+
+    // Close the file
+    fossil_fstream_close(&c_stream);
+}
+
+FOSSIL_TEST_CASE(c_test_stream_set_custom_buffer) {
+    const char *filename = "testfile_custom_buffer.txt";
+    char custom_buffer[1024];
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+
+    // Set a custom buffer
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_set_buffer(&c_stream, custom_buffer, sizeof(custom_buffer)));
+
+    // Close the file
+    fossil_fstream_close(&c_stream);
+}
+
+FOSSIL_TEST_CASE(c_test_stream_set_autosync) {
+    const char *filename = "testfile_autosync.txt";
+    const char *content = "This is a test.";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+
+    // Enable auto-sync
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_set_autosync(&c_stream, 1));
+
+    // Write content
+    fossil_fstream_write(&c_stream, content, strlen(content), 1);
+
+    // Disable auto-sync
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_set_autosync(&c_stream, 0));
+
+    // Close the file
+    fossil_fstream_close(&c_stream);
+}
+
+FOSSIL_TEST_CASE(c_test_stream_remove_file) {
+    const char *filename = "testfile_remove.txt";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+    fossil_fstream_close(&c_stream);
+
+    // Remove the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_remove(filename));
+
+    // Check if the file does not exist
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_file_exists(filename));
+}
+
+FOSSIL_TEST_CASE(c_test_stream_delete_file) {
+    const char *filename = "testfile_delete.txt";
+
+    // Create the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+    fossil_fstream_close(&c_stream);
+
+    // Delete the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_delete(filename));
+
+    // Check if the file does not exist
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_file_exists(filename));
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -248,9 +388,18 @@ FOSSIL_TEST_GROUP(c_file_tests) {
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_is_executable);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_set_permissions);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_get_permissions);
-    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_remove_file);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_get_modification_time);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_get_creation_time);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_flush_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_setpos_and_getpos);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_truncate_file);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_lock_and_unlock_file);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_sync_file);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_set_buffering);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_set_custom_buffer);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_set_autosync);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_remove_file);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_delete_file);
 
     FOSSIL_TEST_REGISTER(c_stream_suite);
 }
