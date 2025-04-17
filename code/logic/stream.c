@@ -738,7 +738,6 @@ int32_t fossil_fstream_unlock(fossil_fstream_t *stream) {
         return FOSSIL_ERROR_IO;
     }
 
-    OVERLAPPED overlapped = {0};
     if (!UnlockFile(file_handle, 0, 0, MAXDWORD, MAXDWORD)) {
         fprintf(stderr, "Error: IO error from unlocking file\n");
         return FOSSIL_ERROR_IO;
