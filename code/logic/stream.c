@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 
 #ifdef _WIN32
@@ -34,6 +35,51 @@ typedef enum {
     FOSSIL_BUFFER_GIANT  = 10000
 } fossil_limit_t;
 
+typedef struct {
+    const char *keyword;
+    const char *mode;
+} fossil_fstream_mode_entry_t;
+
+static const fossil_fstream_mode_entry_t fossil_fstream_mode_table[] = {
+    // Classic C modes (standard fopen strings)
+    { "r",     "r"   }, { "rb",    "rb"  },
+    { "w",     "w"   }, { "wb",    "wb"  },
+    { "a",     "a"   }, { "ab",    "ab"  },
+    { "r+",    "r+"  }, { "rb+",   "r+b" }, { "r+b", "r+b" },
+    { "w+",    "w+"  }, { "wb+",   "w+b" }, { "w+b", "w+b" },
+    { "a+",    "a+"  }, { "ab+",   "a+b" }, { "a+b", "a+b" },
+
+    // Extended readable modes
+    { "read",          "r"   },
+    { "readb",         "rb"  },
+    { "write",         "w"   },
+    { "writeb",        "wb"  },
+    { "append",        "a"   },
+    { "appendb",       "ab"  },
+    { "read+write",    "r+"  },
+    { "read+writeb",   "r+b" },
+    { "write+read",    "w+"  },
+    { "write+readb",   "w+b" },
+    { "append+read",   "a+"  },
+    { "append+readb",  "a+b" },
+    { "read+t",        "rt"  },
+    { "write+t",       "wt"  },
+    { "read+write+t",  "r+t" },
+
+    // Optional end-of-table sentinel
+    { NULL, NULL }
+};
+
+static const char *fossil_fstream_mode_from_keyword(const char *keyword) {
+    if (keyword == NULL) return NULL;
+    for (int i = 0; fossil_fstream_mode_table[i].keyword != NULL; i++) {
+        if (strcmp(keyword, fossil_fstream_mode_table[i].keyword) == 0) {
+            return fossil_fstream_mode_table[i].mode;
+        }
+    }
+    return NULL;
+}
+
 // Open a stream for file operations
 int32_t fossil_fstream_open(fossil_fstream_t *stream, const char *filename, const char *mode) {
     if (stream == NULL || filename == NULL || mode == NULL) {
@@ -46,7 +92,7 @@ int32_t fossil_fstream_open(fossil_fstream_t *stream, const char *filename, cons
         return FOSSIL_ERROR_LIMIT_REACHED;
     }
 
-    stream->file = fopen(filename, mode);
+    stream->file = fopen(filename, fossil_fstream_mode_from_keyword(mode));
     if (stream->file == NULL) {
         fprintf(stderr, "Error: File not found - %s\n", filename);
         return FOSSIL_ERROR_FILE_NOT_FOUND;
@@ -73,7 +119,7 @@ int32_t fossil_fstream_freopen(fossil_fstream_t *stream, const char *filename, c
         return FOSSIL_ERROR_NULL_POINTER;
     }
 
-    FILE *new_file = freopen(filename, mode, file);
+    FILE *new_file = freopen(filename, fossil_fstream_mode_from_keyword(mode), file);
     if (new_file == NULL) {
         fprintf(stderr, "Error: File not found - %s\n", filename);
         return FOSSIL_ERROR_FILE_NOT_FOUND;
@@ -517,4 +563,285 @@ int32_t fossil_fstream_get_permissions(const char *filename, int32_t *mode) {
     *mode = st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO); // User, Group, Other permissions
     return 0;
 #endif
+}
+
+int64_t fossil_fstream_get_modified_time(const char *filename) {
+    if (filename == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return -1;
+    }
+#ifdef _WIN32
+    HANDLE file_handle = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file_handle == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "Error: File not found - %s\n", filename);
+        return -1;
+    }
+
+    FILETIME ft;
+    if (!GetFileTime(file_handle, NULL, NULL, &ft)) {
+        CloseHandle(file_handle);
+        fprintf(stderr, "Error: IO error from getting file time\n");
+        return -1;
+    }
+    CloseHandle(file_handle);
+
+    return ((int64_t)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
+#else
+    struct stat file_stat;
+    if (stat(filename, &file_stat) != 0) {
+        fprintf(stderr, "Error: File not found - %s\n", filename);
+        return -1;
+    }
+
+    return (int64_t)file_stat.st_mtime;
+#endif
+}
+
+int64_t fossil_fstream_get_creation_time(const char *filename) {
+    if (filename == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return -1;
+    }
+#ifdef _WIN32
+    HANDLE file_handle = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file_handle == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "Error: File not found - %s\n", filename);
+        return -1;
+    }
+
+    FILETIME ft;
+    if (!GetFileTime(file_handle, &ft, NULL, NULL)) {
+        CloseHandle(file_handle);
+        fprintf(stderr, "Error: IO error from getting file time\n");
+        return -1;
+    }
+    CloseHandle(file_handle);
+
+    return ((int64_t)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
+#else
+    struct stat file_stat;
+    if (stat(filename, &file_stat) != 0) {
+        fprintf(stderr, "Error: File not found - %s\n", filename);
+        return -1;
+    }
+
+    return (int64_t)file_stat.st_ctime;
+#endif
+}
+
+int32_t fossil_fstream_truncate(const char *filename, int64_t size) {
+    if (filename == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+#ifdef _WIN32
+    HANDLE file_handle = CreateFileA(filename, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file_handle == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "Error: File not found - %s\n", filename);
+        return FOSSIL_ERROR_FILE_NOT_FOUND;
+    }
+
+    if (SetFilePointer(file_handle, (DWORD)(size & 0xFFFFFFFF), (LONG *)&size, FILE_BEGIN) == INVALID_SET_FILE_POINTER) {
+        CloseHandle(file_handle);
+        fprintf(stderr, "Error: IO error from truncating file\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    if (!SetEndOfFile(file_handle)) {
+        CloseHandle(file_handle);
+        fprintf(stderr, "Error: IO error from truncating file\n");
+        return FOSSIL_ERROR_IO;
+    }
+    CloseHandle(file_handle);
+#else
+    int fd = open(filename, O_WRONLY);
+    if (fd == -1) {
+        fprintf(stderr, "Error: File not found - %s\n", filename);
+        return FOSSIL_ERROR_FILE_NOT_FOUND;
+    }
+
+    if (size < 0) {
+        close(fd);
+        fprintf(stderr, "Error: Invalid buffer size\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    // Alternative to ftruncate: Use lseek and write
+    if (lseek(fd, size, SEEK_SET) == -1) {
+        close(fd);
+        fprintf(stderr, "Error: IO error from seeking file\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    if (write(fd, "", 1) != 1) { // Write a single null byte to extend the file
+        close(fd);
+        fprintf(stderr, "Error: IO error from writing to file\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    close(fd);
+#endif
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_lock(fossil_fstream_t *stream) {
+    if (stream == NULL || stream->file == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+#ifdef _WIN32
+    HANDLE file_handle = (HANDLE)_get_osfhandle(_fileno(stream->file));
+    if (file_handle == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "Error: IO error from locking file\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    OVERLAPPED overlapped = {0};
+    if (!LockFile(file_handle, 0, 0, MAXDWORD, MAXDWORD)) {
+        fprintf(stderr, "Error: IO error from locking file\n");
+        return FOSSIL_ERROR_IO;
+    }
+#else
+    int fd = open(stream->filename, O_RDWR);
+    if (fd == -1) {
+        fprintf(stderr, "Error: IO error from opening file for locking\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    struct flock fl;
+    memset(&fl, 0, sizeof(fl));
+    fl.l_type = F_WRLCK; // Write lock
+    fl.l_whence = SEEK_SET;
+    fl.l_start = 0;
+    fl.l_len = 0; // Lock the whole file
+
+    if (fcntl(fd, F_SETLK, &fl) == -1) {
+        fprintf(stderr, "Error: IO error from locking file\n");
+        close(fd);
+        return FOSSIL_ERROR_IO;
+    }
+
+    close(fd); // Close the file descriptor after locking
+#endif
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_unlock(fossil_fstream_t *stream) {
+    if (stream == NULL || stream->file == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+#ifdef _WIN32
+    HANDLE file_handle = (HANDLE)_get_osfhandle(_fileno(stream->file));
+    if (file_handle == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "Error: IO error from unlocking file\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    OVERLAPPED overlapped = {0};
+    if (!UnlockFile(file_handle, 0, 0, MAXDWORD, MAXDWORD)) {
+        fprintf(stderr, "Error: IO error from unlocking file\n");
+        return FOSSIL_ERROR_IO;
+    }
+#else
+    int fd;
+    if ((fd = open(stream->filename, O_RDWR)) == -1) {
+        fprintf(stderr, "Error: IO error from opening file for unlocking\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    struct flock fl;
+    memset(&fl, 0, sizeof(fl));
+    fl.l_type = F_UNLCK; // Unlock
+    fl.l_whence = SEEK_SET;
+    fl.l_start = 0;
+    fl.l_len = 0; // Unlock the whole file
+
+    if (fcntl(fd, F_SETLK, &fl) == -1) {
+        fprintf(stderr, "Error: IO error from unlocking file\n");
+        close(fd);
+        return FOSSIL_ERROR_IO;
+    }
+
+    close(fd); // Close the file descriptor after unlocking
+#endif
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_sync(fossil_fstream_t *stream) {
+    if (stream == NULL || stream->file == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+#ifdef _WIN32
+    HANDLE file_handle = (HANDLE)_get_osfhandle(_fileno(stream->file));
+    if (file_handle == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "Error: IO error from syncing file\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    if (!FlushFileBuffers(file_handle)) {
+        fprintf(stderr, "Error: IO error from syncing file\n");
+        return FOSSIL_ERROR_IO;
+    }
+#else
+    int fd;
+    if ((fd = open(stream->filename, O_RDWR)) == -1) {
+        fprintf(stderr, "Error: IO error from opening file for syncing\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    if (fsync(fd) == -1) {
+        fprintf(stderr, "Error: IO error from syncing file\n");
+        close(fd);
+        return FOSSIL_ERROR_IO;
+    }
+
+    close(fd);
+#endif
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_set_buffering(fossil_fstream_t *stream, int32_t enabled) {
+    if (stream == NULL || stream->file == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    if (enabled) {
+        setvbuf(stream->file, NULL, _IOFBF, FOSSIL_BUFFER_MEDIUM);
+    } else {
+        setvbuf(stream->file, NULL, _IONBF, 0);
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_set_buffer(fossil_fstream_t *stream, void *buffer, size_t size) {
+    if (stream == NULL || stream->file == NULL || buffer == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    if (setvbuf(stream->file, buffer, _IOFBF, size) != 0) {
+        fprintf(stderr, "Error: IO error from setting buffer\n");
+        return FOSSIL_ERROR_IO;
+    }
+
+    return FOSSIL_ERROR_OK;
+}
+
+int32_t fossil_fstream_set_autosync(fossil_fstream_t *stream, int32_t enabled) {
+    if (stream == NULL || stream->file == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_NULL_POINTER;
+    }
+
+    if (enabled) {
+        setvbuf(stream->file, NULL, _IOLBF, 0);
+    } else {
+        setvbuf(stream->file, NULL, _IOFBF, FOSSIL_BUFFER_MEDIUM);
+    }
+
+    return FOSSIL_ERROR_OK;
 }
