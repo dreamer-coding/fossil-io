@@ -696,7 +696,6 @@ int32_t fossil_fstream_lock(fossil_fstream_t *stream) {
         return FOSSIL_ERROR_IO;
     }
 
-    OVERLAPPED overlapped = {0};
     if (!LockFile(file_handle, 0, 0, MAXDWORD, MAXDWORD)) {
         fprintf(stderr, "Error: IO error from locking file\n");
         return FOSSIL_ERROR_IO;
