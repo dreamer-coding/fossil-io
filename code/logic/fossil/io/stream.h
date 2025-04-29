@@ -37,6 +37,8 @@ extern fossil_fstream_t *FOSSIL_STDERR;
 #define FOSSIL_STDOUT (FOSSIL_STDOUT)
 #define FOSSIL_STDERR (FOSSIL_STDERR)
 
+#define FOSSIL_STDEOF (EOF)
+
 /**
  * Reopen a stream with a new file.
  *
@@ -329,6 +331,16 @@ int32_t fossil_fstream_set_permissions(const char *filename, int32_t mode);
  * @return         0 on success, non-zero on failure.
  */
 int32_t fossil_fstream_get_permissions(const char *filename, int32_t *mode);
+
+/**
+ * Check if the end of the file has been reached for a stream.
+ *
+ * This function checks if the end of the file has been reached for a given stream.
+ *
+ * @param stream Pointer to the fossil_fstream_t structure to check.
+ * @return       1 if end of file is reached, 0 otherwise.
+ */
+int32_t fossil_fstream_eof(fossil_fstream_t *stream);
 
 #ifdef __cplusplus
 }
@@ -898,6 +910,18 @@ namespace fossil {
              */
             static int32_t get_permissions(const std::string &filename, int32_t *mode) {
                 return fossil_fstream_get_permissions(filename.c_str(), mode);
+            }
+
+            /**
+             * Check if the end of the file has been reached for a stream.
+             *
+             * This function checks if the end of the file has been reached for a given stream.
+             *
+             * @param stream Pointer to the fossil_fstream_t structure to check.
+             * @return       1 if end of file is reached, 0 otherwise.
+             */
+            static int32_t eof(fossil_fstream_t *stream) {
+                return fossil_fstream_eof(stream);
             }
 
         };

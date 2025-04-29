@@ -567,3 +567,12 @@ int32_t fossil_fstream_get_permissions(const char *filename, int32_t *mode) {
     return 0;
 #endif
 }
+
+int32_t fossil_fstream_eof(fossil_fstream_t *stream) {
+    if (stream == NULL || stream->file == NULL) {
+        fprintf(stderr, "Error: Null pointer\n");
+        return FOSSIL_ERROR_CNULL_POINTER;
+    }
+
+    return feof(stream->file) ? 1 : 0;
+}
