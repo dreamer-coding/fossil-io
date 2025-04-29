@@ -368,6 +368,64 @@ FOSSIL_TEST_CASE(cpp_test_stream_class_get_permissions) {
     ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::get_permissions(filename, &mode));
 }
 
+FOSSIL_TEST_CASE(cpp_test_stream_eof) {
+    const char *filename = "testfile_eof.txt";
+    const char *content = "This is a test.";
+
+    // Write data to the file
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "w"));
+    fossil_fstream_write(&cpp_stream, content, strlen(content), 1);
+    fossil_fstream_close(&cpp_stream);
+
+    // Open the file for reading
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&cpp_stream, filename, "r"));
+
+    // Read the content
+    char buffer[1024];
+    fossil_fstream_read(&cpp_stream, buffer, strlen(content), 1);
+
+    // Check if EOF is not yet reached
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_eof(&cpp_stream));
+
+    // Read beyond the content to reach EOF
+    fossil_fstream_read(&cpp_stream, buffer, 1, 1);
+
+    // Check if EOF is reached
+    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_eof(&cpp_stream));
+
+    // Close the file
+    fossil_fstream_close(&cpp_stream);
+}
+
+FOSSIL_TEST_CASE(cpp_test_stream_class_eof) {
+    const char *filename = "testfile_eof_class.txt";
+    const char *content = "This is a test.";
+
+    // Write data to the file
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "w"));
+    fossil::io::Stream::write(&cpp_stream, content, strlen(content), 1);
+    fossil::io::Stream::close(&cpp_stream);
+
+    // Open the file for reading
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::open(&cpp_stream, filename, "r"));
+
+    // Read the content
+    char buffer[1024];
+    fossil::io::Stream::read(&cpp_stream, buffer, strlen(content), 1);
+
+    // Check if EOF is not yet reached
+    ASSUME_ITS_EQUAL_I32(0, fossil::io::Stream::eof(&cpp_stream));
+
+    // Read beyond the content to reach EOF
+    fossil::io::Stream::read(&cpp_stream, buffer, 1, 1);
+
+    // Check if EOF is reached
+    ASSUME_ITS_EQUAL_I32(1, fossil::io::Stream::eof(&cpp_stream));
+
+    // Close the file
+    fossil::io::Stream::close(&cpp_stream);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -386,6 +444,7 @@ FOSSIL_TEST_GROUP(cpp_file_tests) {
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_remove_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_flush_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_setpos_and_getpos);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_eof);
 
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_write_and_read_file);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_open_and_close_file);
@@ -397,6 +456,7 @@ FOSSIL_TEST_GROUP(cpp_file_tests) {
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_is_executable);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_set_permissions);
     FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_get_permissions);
+    FOSSIL_TEST_ADD(cpp_stream_suite, cpp_test_stream_class_eof);
 
     FOSSIL_TEST_REGISTER(cpp_stream_suite);
 }

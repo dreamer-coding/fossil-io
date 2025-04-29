@@ -233,6 +233,35 @@ FOSSIL_TEST_CASE(c_test_stream_setpos_and_getpos) {
     fossil_fstream_close(&c_stream);
 }
 
+FOSSIL_TEST_CASE(c_test_stream_eof) {
+    const char *filename = "testfile_eof.txt";
+    const char *content = "This is a test.";
+
+    // Create the file and write content
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "w"));
+    fossil_fstream_write(&c_stream, content, strlen(content), 1);
+    fossil_fstream_close(&c_stream);
+
+    // Open the file for reading
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_open(&c_stream, filename, "r"));
+
+    // Read the content
+    char buffer[1024];
+    fossil_fstream_read(&c_stream, buffer, sizeof(char), strlen(content));
+
+    // Check if EOF is not reached yet
+    ASSUME_ITS_EQUAL_I32(0, fossil_fstream_eof(&c_stream));
+
+    // Read beyond the content to reach EOF
+    fossil_fstream_read(&c_stream, buffer, sizeof(char), 1);
+
+    // Check if EOF is reached
+    ASSUME_ITS_EQUAL_I32(1, fossil_fstream_eof(&c_stream));
+
+    // Close the file
+    fossil_fstream_close(&c_stream);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
@@ -251,6 +280,7 @@ FOSSIL_TEST_GROUP(c_file_tests) {
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_remove_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_flush_file);
     FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_setpos_and_getpos);
+    FOSSIL_TEST_ADD(c_stream_suite, c_test_stream_eof);
 
     FOSSIL_TEST_REGISTER(c_stream_suite);
 }
