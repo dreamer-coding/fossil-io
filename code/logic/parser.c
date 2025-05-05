@@ -12,12 +12,16 @@
  * -----------------------------------------------------------------------------
  */
 #include "fossil/io/parser.h"
+#include "fossil/io/output.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <string.h>
 #include <ctype.h>
-#include <math.h>
+
+static const char *g_app_name = "app";
+static const char *g_version = "0.0.0";
+static fossil_io_cmd_t *g_cmds = NULL;
+static int g_cmd_count = 0;
 
 extern char *_custom_strdup(const char *str) {
     if (!str) return NULL;
@@ -29,268 +33,126 @@ extern char *_custom_strdup(const char *str) {
     return dup;
 }
 
-// ==================================================================
-// AI magic tricks
-// ==================================================================
+// Built-in flags
+static int dry_run = 0, verbose = 0, color = 0, sanity = 0, show_this = 0;
 
-// Function to calculate Levenshtein Distance
-int levenshtein_distance(const char *s1, const char *s2) {
-    int len1 = strlen(s1), len2 = strlen(s2);
-    int dp[len1 + 1][len2 + 1];
-
-    for (int i = 0; i <= len1; i++) dp[i][0] = i;
-    for (int j = 0; j <= len2; j++) dp[0][j] = j;
-
-    for (int i = 1; i <= len1; i++) {
-        for (int j = 1; j <= len2; j++) {
-            int cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
-            dp[i][j] = fmin(fmin(dp[i - 1][j] + 1, dp[i][j - 1] + 1), dp[i - 1][j - 1] + cost);
-        }
+static void print_help(const fossil_io_cmd_t *cmd) {
+    fossil_io_printf("{blue,bold}Usage:{cyan,italic} %s [command] [flags]{reset}\n", g_app_name);
+    if (cmd) {
+        fossil_io_printf("{blue,bold}Command:{cyan,italic} %s - %s{reset}\n", cmd->name, cmd->description);
+        for (int i = 0; i < cmd->flag_count; i++)
+            fossil_io_printf("{cyan,italic}  --%s\t%s{reset}\n", cmd->flags[i].name, cmd->flags[i].description);
+        for (int i = 0; i < cmd->subcommand_count; i++)
+            fossil_io_printf("{cyan,italic}  %s\t%s{reset}\n", cmd->subcommands[i].name, cmd->subcommands[i].description);
+    } else {
+        for (int i = 0; i < g_cmd_count; i++)
+            fossil_io_printf("{cyan,italic}  %s\t%s{reset}\n", g_cmds[i].name, g_cmds[i].description);
     }
-    return dp[len1][len2];
+    fossil_io_puts("{blue,bold}Built-in flags:{cyan,italic} --help, --version, --dry-run, --this, --sanity, --color, --verbose{reset}");
 }
 
-// Function to find the closest command match
-const char* suggest_command(const char *input, fossil_io_parser_palette_t *palette) {
-    fossil_io_parser_command_t *current = palette->commands;
-    const char *best_match = NULL;
-    int min_distance = INT_MAX;
-
-    while (current) {
-        int distance = levenshtein_distance(input, current->name);
-        if (distance < min_distance) {
-            min_distance = distance;
-            best_match = current->name;
-        }
-        current = current->next;
-    }
-    return (min_distance <= 3) ? best_match : NULL; // Suggest only if close enough
+static int is_flag(const char *arg) {
+    return strncmp(arg, "--", 2) == 0;
 }
 
-// ==================================================================
-// Functions
-// ==================================================================
-
-void show_help(const char *command_name, const fossil_io_parser_palette_t *palette) {
-    fossil_io_parser_command_t *command = palette->commands;
-
-    // If no specific command is provided, show all commands
-    if (!command_name) {
-        printf("Available commands:\n");
-        while (command) {
-            printf("  %s: %s\n", command->name, command->description);
-            command = command->next;
-        }
-        printf("\nUse '--help <command>' for details on a specific command.\n");
-        return;
-    }
-
-    // Search for the specific command
-    while (command) {
-        if (strcmp(command->name, command_name) == 0) {
-            printf("Command: %s\nDescription: %s\n", command->name, command->description);
-            printf("Arguments:\n");
-            fossil_io_parser_argument_t *arg = command->arguments;
-            while (arg) {
-                printf("  --%s (%s): %s\n", 
-                       arg->name, 
-                       arg->type == FOSSIL_IO_PARSER_BOOL ? "bool" :
-                       arg->type == FOSSIL_IO_PARSER_STRING ? "string" :
-                       arg->type == FOSSIL_IO_PARSER_INT ? "int" :
-                       "combo", 
-                       arg->value ? arg->value : "No default value");
-                if (arg->type == FOSSIL_IO_PARSER_COMBO) {
-                    printf("    Options: ");
-                    for (int i = 0; i < arg->combo_count; i++) {
-                        printf("%s%s", arg->combo_options[i], i == arg->combo_count - 1 ? "" : ", ");
-                    }
-                    printf("\n");
-                }
-                arg = arg->next;
-            }
-            return;
-        }
-        command = command->next;
-    }
-
-    // If the command is not found
-    fprintf(stderr, "Unknown command '%s'. Use '--help' to see available commands.\n", command_name);
+static void set_builtin_flag(const char *arg) {
+    if (!strcmp(arg, "--dry-run")) dry_run = 1;
+    else if (!strcmp(arg, "--verbose")) verbose = 1;
+    else if (!strcmp(arg, "--color")) color = 1;
+    else if (!strcmp(arg, "--sanity")) sanity = 1;
+    else if (!strcmp(arg, "--this")) show_this = 1;
+    else if (!strcmp(arg, "--version")) { fossil_io_printf("{cyan,italic}%s v%s{reset}\n", g_app_name, g_version); exit(0); }
+    else if (!strcmp(arg, "--help")) { print_help(NULL); exit(0); }
 }
 
-
-void show_usage(const char *command_name, const fossil_io_parser_palette_t *palette) {
-    fossil_io_parser_command_t *command = palette->commands;
-
-    // Search for the specific command
-    while (command) {
-        if (strcmp(command->name, command_name) == 0) {
-            printf("Usage example for '%s':\n", command->name);
-            printf("  %s", command->name);
-
-            fossil_io_parser_argument_t *arg = command->arguments;
-            while (arg) {
-                printf(" --%s ", arg->name);
-                if (arg->type == FOSSIL_IO_PARSER_STRING) {
-                    printf("<string>");
-                } else if (arg->type == FOSSIL_IO_PARSER_INT) {
-                    printf("<int>");
-                } else if (arg->type == FOSSIL_IO_PARSER_BOOL) {
-                    printf("<true/false>");
-                } else if (arg->type == FOSSIL_IO_PARSER_COMBO) {
-                    printf("<%s>", arg->combo_options[0]); // Show first combo option
-                }
-                arg = arg->next;
-            }
-            printf("\n");
-            return;
-        }
-        command = command->next;
-    }
-
-    // If the command is not found
-    fprintf(stderr, "Unknown command '%s'. Use '--help' to see available commands.\n", command_name);
-}
-
-fossil_io_parser_palette_t *fossil_io_parser_create_palette(const char *name, const char *description) {
-    fossil_io_parser_palette_t *palette = malloc(sizeof(fossil_io_parser_palette_t));
-    palette->name = _custom_strdup(name);
-    palette->description = _custom_strdup(description);
-    palette->commands = NULL;
-    return palette;
-}
-
-fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palette_t *palette, const char *command_name, const char *description) {
-    fossil_io_parser_command_t *command = malloc(sizeof(fossil_io_parser_command_t));
-    command->name = _custom_strdup(command_name);
-    command->description = _custom_strdup(description);
-    command->arguments = NULL;
-    command->prev = NULL;
-    command->next = palette->commands;
-    if (palette->commands) {
-        palette->commands->prev = command;
-    }
-    palette->commands = command;
-    return command;
-}
-
-fossil_io_parser_argument_t *fossil_io_parser_add_argument(fossil_io_parser_command_t *command, const char *arg_name, fossil_io_parser_arg_type_t arg_type, char **combo_options, int combo_count) {
-    fossil_io_parser_argument_t *argument = malloc(sizeof(fossil_io_parser_argument_t));
-    argument->name = _custom_strdup(arg_name);
-    argument->type = arg_type;
-    argument->value = NULL;
-    argument->combo_options = combo_options;
-    argument->combo_count = combo_count;
-    argument->next = command->arguments;
-    command->arguments = argument;
-    return argument;
-}
-
-// Updated parse function
-void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char **argv) {
-    if (argc < 2) {
-        fprintf(stderr, "No command provided.\n");
-        return;
-    }
-
-    const char *command_name = argv[1];
-
-    // Check for --help and --usage flags
-    if (strcmp(argv[1], "--help") == 0) {
-        if (argc == 3) {
-            show_help(argv[2], palette); // Show help for a specific command
-        } else {
-            show_help(NULL, palette);   // Show general help
-        }
-        return;
-    }
-
-    if (strcmp(argv[1], "--usage") == 0) {
-        if (argc == 3) {
-            show_usage(argv[2], palette); // Show usage for a specific command
-        } else {
-            fprintf(stderr, "Usage: --usage <command>\n");
-        }
-        return;
-    }
-
-    fossil_io_parser_command_t *command = palette->commands;
-    while (command) {
-        if (strcmp(command->name, command_name) == 0) {
+static void parse_value(const char *val, fossil_io_flag_t *flag) {
+    switch (flag->type) {
+        case FOSSIL_IO_TYPE_BOOL: *(int*)flag->value = 1; break;
+        case FOSSIL_IO_TYPE_INT: *(int*)flag->value = atoi(val); break;
+        case FOSSIL_IO_TYPE_FLOAT: *(float*)flag->value = (float)atof(val); break;
+        case FOSSIL_IO_TYPE_STRING: *(const char**)flag->value = val; break;
+        case FOSSIL_IO_TYPE_ARRAY: *(const char**)flag->value = val; break;
+        case FOSSIL_IO_TYPE_FEATURE: *(int*)flag->value = 1; break;
+        case FOSSIL_IO_TYPE_COMBO:
+            if (!strcmp(val, "auto")) *(fossil_io_combo_t*)flag->value = FOSSIL_IO_COMBO_AUTO;
+            else if (!strcmp(val, "enable")) *(fossil_io_combo_t*)flag->value = FOSSIL_IO_COMBO_ENABLE;
+            else if (!strcmp(val, "disable")) *(fossil_io_combo_t*)flag->value = FOSSIL_IO_COMBO_DISABLE;
             break;
-        }
-        command = command->next;
     }
+}
 
-    if (!command) {
-        // Suggest a similar command or show an error
-        const char *suggestion = suggest_command(command_name, palette);
-        if (suggestion) {
-            fprintf(stderr, "Unknown command: '%s'. Did you mean '%s'?\n", command_name, suggestion);
-        } else {
-            fprintf(stderr, "Unknown command: '%s'. Type '--help' to see available commands.\n", command_name);
+void fossil_io_parser_init(const char *app_name, const char *version) {
+    g_app_name = app_name;
+    g_version = version;
+}
+
+void fossil_io_parser_add_command(fossil_io_cmd_t *cmd) {
+    g_cmds = realloc(g_cmds, sizeof(fossil_io_cmd_t) * (g_cmd_count + 1));
+    g_cmds[g_cmd_count++] = *cmd;
+}
+
+void fossil_io_parser_parse(int argc, char **argv) {
+    for (int i = 1; i < argc; ++i) {
+        if (is_flag(argv[i])) {
+            set_builtin_flag(argv[i]);
+            continue;
         }
-        return;
-    }
 
-    // Process command arguments
-    for (int i = 2; i < argc; i++) {
-        const char *arg_value = argv[i];
-        fossil_io_parser_argument_t *argument = command->arguments;
-        while (argument) {
-            if (strcmp(argument->name, arg_value) == 0) {
-                switch (argument->type) {
-                    case FOSSIL_IO_PARSER_BOOL:
-                        argument->value = malloc(sizeof(int));
-                        if (strcmp(arg_value, "enable") == 0) {
-                            *(int *)argument->value = 1; // Enable
-                        } else if (strcmp(arg_value, "disable") == 0) {
-                            *(int *)argument->value = 0; // Disable
-                        } else {
-                            fprintf(stderr, "Invalid value for boolean argument: %s\n", arg_value);
-                            free(argument->value);
-                            argument->value = NULL;
-                        }
-                        break;
-                    case FOSSIL_IO_PARSER_STRING:
-                        argument->value = _custom_strdup(arg_value); // Custom _custom_strdup
-                        break;
-                    case FOSSIL_IO_PARSER_INT:
-                        argument->value = malloc(sizeof(int));
-                        *(int *)argument->value = atoi(arg_value);
-                        break;
-                    case FOSSIL_IO_PARSER_COMBO:
-                        for (int j = 0; j < argument->combo_count; j++) {
-                            if (strcmp(arg_value, argument->combo_options[j]) == 0) {
-                                argument->value = _custom_strdup(arg_value);
-                                break;
+        for (int c = 0; c < g_cmd_count; ++c) {
+            fossil_io_cmd_t *cmd = &g_cmds[c];
+            if (!strcmp(argv[i], cmd->name)) {
+                int j = i + 1;
+                while (j < argc) {
+                    if (is_flag(argv[j])) {
+                        for (int f = 0; f < cmd->flag_count; ++f) {
+                            if (!strcmp(argv[j] + 2, cmd->flags[f].name)) {
+                                if (cmd->flags[f].type == FOSSIL_IO_TYPE_BOOL) {
+                                    *(int*)cmd->flags[f].value = 1;
+                                } else if (j + 1 < argc && !is_flag(argv[j + 1])) {
+                                    parse_value(argv[++j], &cmd->flags[f]);
+                                }
                             }
                         }
-                        break;
+                    } else {
+                        for (int s = 0; s < cmd->subcommand_count; ++s) {
+                            if (!strcmp(argv[j], cmd->subcommands[s].name)) {
+                                if (cmd->subcommands[s].handler)
+                                    cmd->subcommands[s].handler(&cmd->subcommands[s]);
+                                return;
+                            }
+                        }
+                    }
+                    j++;
                 }
-                break;
+
+                if (cmd->handler) cmd->handler(cmd);
+                return;
             }
-            argument = argument->next;
         }
+
+        fossil_io_printf("{red,bold}Unknown command:{red,italic} %s{reset}\n", argv[i]);
+        print_help(NULL);
+        exit(1);
     }
 }
 
-void fossil_io_parser_free(fossil_io_parser_palette_t *palette) {
-    fossil_io_parser_command_t *command = palette->commands;
-    while (command) {
-        fossil_io_parser_argument_t *argument = command->arguments;
-        while (argument) {
-            if (argument->type == FOSSIL_IO_PARSER_COMBO) {
-                free(argument->combo_options);
-            }
-            free(argument->name);
-            free(argument->value);
-            argument = argument->next;
-        }
-        free(command->name);
-        free(command->description);
-        command = command->next;
-    }
-    free(palette->name);
-    free(palette->description);
-    free(palette);
+// Built-in flag accessors
+int fossil_io_parser_is_dry_run(void) {
+    return dry_run;
+}
+
+int fossil_io_parser_is_verbose(void) {
+    return verbose;
+}
+
+int fossil_io_parser_use_color(void) {
+    return color;
+}
+
+int fossil_io_parser_do_sanity(void) {
+    return sanity;
+}
+
+int fossil_io_parser_show_info(void) {
+    return show_this;
 }

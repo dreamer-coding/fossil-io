@@ -20,90 +20,128 @@
 extern "C" {
 #endif
 
-// Types of command argument
 typedef enum {
-    FOSSIL_IO_PARSER_BOOL,   // Boolean (enable/disable)
-    FOSSIL_IO_PARSER_STRING, // String argument
-    FOSSIL_IO_PARSER_INT,    // Integer argument
-    FOSSIL_IO_PARSER_COMBO   // Combo of predefined values
-} fossil_io_parser_arg_type_t;
+    FOSSIL_IO_TYPE_BOOL,
+    FOSSIL_IO_TYPE_INT,
+    FOSSIL_IO_TYPE_FLOAT,
+    FOSSIL_IO_TYPE_STRING,
+    FOSSIL_IO_TYPE_ARRAY,
+    FOSSIL_IO_TYPE_FEATURE,
+    FOSSIL_IO_TYPE_COMBO  // auto, enable, disable
+} fossil_io_type_t;
 
-// Structure to represent each argument in the command
-typedef struct fossil_io_parser_argument_s {
-    char *name;                                   // Argument name
-    fossil_io_parser_arg_type_t type;         // Argument type
-    char *value;                                  // Parsed value
-    char **combo_options;                         // Valid options for COMBO type
-    int combo_count;                              // Number of valid options
-    struct fossil_io_parser_argument_s *next; // Next argument in the list
-} fossil_io_parser_argument_t;
+typedef enum {
+    FOSSIL_IO_COMBO_AUTO,
+    FOSSIL_IO_COMBO_ENABLE,
+    FOSSIL_IO_COMBO_DISABLE
+} fossil_io_combo_t;
 
-// Structure for a command
-typedef struct fossil_io_parser_command_s {
-    char *name;                                  // Command name
-    char *description;                           // Command description
-    fossil_io_parser_argument_t *arguments;  // List of arguments
-    struct fossil_io_parser_command_s *prev; // Previous command in the list
-    struct fossil_io_parser_command_s *next; // Next command in the list
-} fossil_io_parser_command_t;
+typedef struct {
+    const char *name;
+    const char *description;
+    fossil_io_type_t type;
+    void *value;
+} fossil_io_flag_t;
 
-// Structure for the command palette
-typedef struct fossil_io_parser_palette_s {
-    char *name;                               // Palette name
-    char *description;                        // Palette description
-    fossil_io_parser_command_t *commands; // List of commands
-} fossil_io_parser_palette_t;
+typedef struct fossil_io_cmd fossil_io_cmd_t;
+
+typedef void (*fossil_io_cmd_handler_t)(fossil_io_cmd_t *cmd);
+
+struct fossil_io_cmd {
+    const char *name;
+    const char *description;
+    fossil_io_flag_t *flags;
+    int flag_count;
+    fossil_io_cmd_t *subcommands;
+    int subcommand_count;
+    fossil_io_cmd_handler_t handler;
+};
 
 // ==================================================================
 // Functions
 // ==================================================================
 
 /**
- * @brief Creates a new parser palette.
+ * @brief Initializes the fossil I/O parser with application-specific details.
  *
- * @param name The name of the palette.
- * @param description A description of the palette.
- * @return A pointer to the newly created parser palette.
+ * This function sets up the parser by providing the application name and version.
+ * It must be called before using any other parser-related functions.
+ *
+ * @param app_name The name of the application.
+ * @param version The version of the application.
  */
-fossil_io_parser_palette_t *fossil_io_parser_create_palette(const char *name, const char *description);
+void fossil_io_parser_init(const char *app_name, const char *version);
 
 /**
- * @brief Adds a command to the parser palette.
+ * @brief Adds a command to the fossil I/O parser.
  *
- * @param palette The parser palette to which the command will be added.
- * @param command_name The name of the command.
- * @param description A description of the command.
- * @return A pointer to the newly added command.
+ * This function registers a new command that the parser can recognize and handle.
+ * Commands must be added before calling the parse function.
+ *
+ * @param cmd A pointer to the command structure to be added.
  */
-fossil_io_parser_command_t *fossil_io_parser_add_command(fossil_io_parser_palette_t *palette, const char *command_name, const char *description);
+void fossil_io_parser_add_command(fossil_io_cmd_t *cmd);
 
 /**
- * @brief Adds an argument to a command.
+ * @brief Parses the command-line arguments.
  *
- * @param command The command to which the argument will be added.
- * @param arg_name The name of the argument.
- * @param arg_type The type of the argument.
- * @param combo_options (Optional) Array of valid options for COMBO type.
- * @param combo_count (Optional) Number of options for COMBO type.
- * @return A pointer to the newly added argument.
+ * This function processes the arguments passed to the application and matches
+ * them against the registered commands and built-in flags.
+ *
+ * @param argc The argument count, typically passed from the main function.
+ * @param argv The argument vector, typically passed from the main function.
  */
-fossil_io_parser_argument_t *fossil_io_parser_add_argument(fossil_io_parser_command_t *command, const char *arg_name, fossil_io_parser_arg_type_t arg_type, char **combo_options, int combo_count);
+void fossil_io_parser_parse(int argc, char **argv);
 
 /**
- * @brief Parses the command-line arguments using the parser palette.
+ * @brief Checks if the dry-run flag is enabled.
  *
- * @param palette The parser palette to use for parsing.
- * @param argc The number of command-line arguments.
- * @param argv The command-line arguments.
+ * This accessor function determines whether the dry-run mode is active,
+ * which typically means no changes will be applied.
+ *
+ * @return Non-zero if dry-run mode is enabled, otherwise 0.
  */
-void fossil_io_parser_parse(fossil_io_parser_palette_t *palette, int argc, char **argv);
+int fossil_io_parser_is_dry_run(void);
 
 /**
- * @brief Frees the memory allocated for the parser palette.
+ * @brief Checks if verbose mode is enabled.
  *
- * @param palette The parser palette to be freed.
+ * This accessor function determines whether verbose output is enabled,
+ * which typically provides additional details during execution.
+ *
+ * @return Non-zero if verbose mode is enabled, otherwise 0.
  */
-void fossil_io_parser_free(fossil_io_parser_palette_t *palette);
+int fossil_io_parser_is_verbose(void);
+
+/**
+ * @brief Checks if color output is enabled.
+ *
+ * This accessor function determines whether the parser should use colored
+ * output for better readability in supported terminals.
+ *
+ * @return Non-zero if color output is enabled, otherwise 0.
+ */
+int fossil_io_parser_use_color(void);
+
+/**
+ * @brief Checks if sanity checks are enabled.
+ *
+ * This accessor function determines whether the parser should perform
+ * additional sanity checks during execution.
+ *
+ * @return Non-zero if sanity checks are enabled, otherwise 0.
+ */
+int fossil_io_parser_do_sanity(void);
+
+/**
+ * @brief Checks if informational messages should be displayed.
+ *
+ * This accessor function determines whether the parser should display
+ * informational messages during execution.
+ *
+ * @return Non-zero if informational messages are enabled, otherwise 0.
+ */
+int fossil_io_parser_show_info(void);
 
 #ifdef __cplusplus
 }
@@ -123,64 +161,82 @@ namespace fossil {
         class Parser {
         public:
             /**
-             * Creates a new parser palette.
+             * Initializes the parser with application-specific details.
              *
-             * @param name The name of the palette.
-             * @param description A description of the palette.
-             * @return A pointer to the newly created parser palette.
+             * @param app_name The name of the application.
+             * @param version The version of the application.
              */
-            static fossil_io_parser_palette_t *create_palette(const char *name, const char *description) {
-                return fossil_io_parser_create_palette(name, description);
+            static void init(const char *app_name, const char *version) {
+                fossil_io_parser_init(app_name, version);
             }
 
             /**
-             * Adds a command to the parser palette.
+             * Adds a command to the parser.
              *
-             * @param palette The parser palette to which the command will be added.
-             * @param command_name The name of the command.
-             * @param description A description of the command.
-             * @return A pointer to the newly added command.
+             * @param cmd A pointer to the command structure to be added.
              */
-            static fossil_io_parser_command_t *add_command(fossil_io_parser_palette_t *palette, const char *command_name, const char *description) {
-                return fossil_io_parser_add_command(palette, command_name, description);
+            static void add_command(fossil_io_cmd_t *cmd) {
+                fossil_io_parser_add_command(cmd);
             }
 
             /**
-             * Adds an argument to a command.
+             * Parses command-line arguments.
              *
-             * @param command The command to which the argument will be added.
-             * @param arg_name The name of the argument.
-             * @param arg_type The type of the argument.
-             * @param combo_options (Optional) Array of valid options for COMBO type.
-             * @param combo_count (Optional) Number of options for COMBO type.
-             * @return A pointer to the newly added argument.
+             * @param argc The argument count.
+             * @param argv The argument vector.
              */
-            static fossil_io_parser_argument_t *add_argument(fossil_io_parser_command_t *command, const char *arg_name, fossil_io_parser_arg_type_t arg_type, char **combo_options, int combo_count) {
-                return fossil_io_parser_add_argument(command, arg_name, arg_type, combo_options, combo_count);
+            static void parse(int argc, char **argv) {
+                fossil_io_parser_parse(argc, argv);
             }
 
             /**
-             * Parses the command-line arguments using the parser palette.
+             * Checks if dry-run mode is enabled.
              *
-             * @param palette The parser palette to use for parsing.
-             * @param argc The number of command-line arguments.
-             * @param argv The command-line arguments.
+             * @return Non-zero if dry-run mode is enabled, otherwise 0.
              */
-            static void parse(fossil_io_parser_palette_t *palette, int argc, char **argv) {
-                fossil_io_parser_parse(palette, argc, argv);
+            static int is_dry_run() {
+                return fossil_io_parser_is_dry_run();
             }
 
             /**
-             * Frees the memory allocated for the parser palette.
+             * Checks if verbose mode is enabled.
              *
-             * @param palette The parser palette to be freed.
+             * @return Non-zero if verbose mode is enabled, otherwise 0.
              */
-            static void free(fossil_io_parser_palette_t *palette) {
-                fossil_io_parser_free(palette);
+            static int is_verbose() {
+                return fossil_io_parser_is_verbose();
             }
 
+            /**
+             * Checks if color output is enabled.
+             *
+             * @return Non-zero if color output is enabled, otherwise 0.
+             */
+            static int use_color() {
+                return fossil_io_parser_use_color();
+            }
+
+            /**
+             * Checks if sanity checks are enabled.
+             *
+             * @return Non-zero if sanity checks are enabled, otherwise 0.
+             */
+            static int do_sanity() {
+                return fossil_io_parser_do_sanity();
+            }
+
+            /**
+             * Checks if informational messages should be displayed.
+             *
+             * @return Non-zero if informational messages are enabled, otherwise 0.
+             */
+            static int show_info() {
+                return fossil_io_parser_show_info();
+            }
         };
+
     }
+
 }
 
 #endif
