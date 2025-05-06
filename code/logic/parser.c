@@ -31,16 +31,25 @@ static int dry_run = 0, verbose = 0, sanity = 0, show_this = 0;
 
 static int levenshtein_distance(const char *a, const char *b) {
     int la = strlen(a), lb = strlen(b);
-    int dp[64][64]; // limit max length to 63
-    for (int i = 0; i <= la; i++) for (int j = 0; j <= lb; j++)
-        dp[i][j] = (i == 0) ? j : (j == 0) ? i : 0;
+    int **dp = malloc((la + 1) * sizeof(int *));
+    for (int i = 0; i <= la; i++) {
+        dp[i] = malloc((lb + 1) * sizeof(int));
+        for (int j = 0; j <= lb; j++) {
+            dp[i][j] = (i == 0) ? j : (j == 0) ? i : 0;
+        }
+    }
     for (int i = 1; i <= la; i++) {
         for (int j = 1; j <= lb; j++) {
             if (a[i - 1] == b[j - 1]) dp[i][j] = dp[i - 1][j - 1];
             else dp[i][j] = 1 + fmin(fmin(dp[i - 1][j], dp[i][j - 1]), dp[i - 1][j - 1]);
         }
     }
-    return dp[la][lb];
+    int result = dp[la][lb];
+    for (int i = 0; i <= la; i++) {
+        free(dp[i]);
+    }
+    free(dp);
+    return result;
 }
 
 static const char* suggest_closest(const char *input, const char **options, int option_count) {
@@ -119,14 +128,6 @@ static void set_builtin_flag(const char *arg) {
     }
     else if (!strcmp(arg, "--version")) { fossil_io_printf("{cyan,italic}%s v%s{reset}\n", g_app_name, g_version); exit(0); }
     else if (!strcmp(arg, "--help")) { print_help(g_cmds); exit(0); }
-    else if (!strcmp(arg, "--sanity")) sanity = 1;
-    else if (!strcmp(arg, "--this")) {
-        show_this = 1;
-        print_this();
-        exit(0);
-    }
-    else if (!strcmp(arg, "--version")) { fossil_io_printf("{cyan,italic}%s v%s{reset}\n", g_app_name, g_version); exit(0); }
-    else if (!strcmp(arg, "--help")) { print_help(g_cmds); exit(0); }
     else if (!strncmp(arg, "--flag=", 7)) {
         const char *name = arg + 7;
         for (int c = 0; c < g_cmd_count; c++) {
@@ -144,6 +145,11 @@ static void set_builtin_flag(const char *arg) {
 }
 
 static void parse_value(const char *val, fossil_io_flag_t *flag) {
+    if (!flag || !flag->value) {
+        fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: NULL flag or uninitialized value in parse_value.{reset}\n");
+        exit(EXIT_FAILURE);
+    }
+
     switch (flag->type) {
         case FOSSIL_IO_TYPE_BOOL: *(int*)flag->value = 1; break;
         case FOSSIL_IO_TYPE_INT: *(int*)flag->value = atoi(val); break;
@@ -155,7 +161,14 @@ static void parse_value(const char *val, fossil_io_flag_t *flag) {
             if (!strcmp(val, "auto")) *(fossil_io_combo_t*)flag->value = FOSSIL_IO_COMBO_AUTO;
             else if (!strcmp(val, "enable")) *(fossil_io_combo_t*)flag->value = FOSSIL_IO_COMBO_ENABLE;
             else if (!strcmp(val, "disable")) *(fossil_io_combo_t*)flag->value = FOSSIL_IO_COMBO_DISABLE;
+            else {
+                fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Invalid value for combo type: %s.{reset}\n", val);
+                exit(EXIT_FAILURE);
+            }
             break;
+        default:
+            fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Unknown flag type in parse_value.{reset}\n");
+            exit(EXIT_FAILURE);
     }
 }
 
@@ -166,8 +179,8 @@ void fossil_io_parser_init(const char *app_name, const char *version, const char
 }
 
 void fossil_io_parser_add_command(fossil_io_cmd_t *cmd) {
-    if (!cmd) {
-        fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: NULL command passed to fossil_io_parser_add_command.{reset}\n");
+    if (!cmd || !cmd->name || !cmd->description) {
+        fossil_io_fprintf(FOSSIL_STDERR, "{red}Error: Invalid or NULL command passed to fossil_io_parser_add_command.{reset}\n");
         exit(EXIT_FAILURE);
     }
 
@@ -178,6 +191,7 @@ void fossil_io_parser_add_command(fossil_io_cmd_t *cmd) {
     }
 
     g_cmds = new_cmds;
+    memset(&g_cmds[g_cmd_count], 0, sizeof(fossil_io_cmd_t)); // Ensure the new command is zero-initialized
     g_cmds[g_cmd_count++] = *cmd;
 }
 
