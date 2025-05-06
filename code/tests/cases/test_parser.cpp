@@ -126,6 +126,10 @@ FOSSIL_TEST_CASE(cpp_test_parser_class_add_subcommand) {
     fossil_io_cmd_t parent_cmd = {
         .name = "parent",
         .description = "Parent command for testing",
+        .flags = NULL,
+        .flag_count = 0,
+        .subcommands = NULL,
+        .subcommand_count = 0,
         .handler = NULL
     };
 
@@ -133,6 +137,10 @@ FOSSIL_TEST_CASE(cpp_test_parser_class_add_subcommand) {
     fossil_io_cmd_t sub_cmd = {
         .name = "sub",
         .description = "Subcommand for testing",
+        .flags = NULL,
+        .flag_count = 0,
+        .subcommands = NULL,
+        .subcommand_count = 0,
         .handler = NULL
     };
 
@@ -148,6 +156,10 @@ FOSSIL_TEST_CASE(cpp_test_parser_class_add_flag) {
     fossil_io_cmd_t cmd = {
         .name = "test",
         .description = "Command for testing flags",
+        .flags = NULL,
+        .flag_count = 0,
+        .subcommands = NULL,
+        .subcommand_count = 0,
         .handler = NULL
     };
 
