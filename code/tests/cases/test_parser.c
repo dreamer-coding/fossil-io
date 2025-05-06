@@ -45,7 +45,15 @@ FOSSIL_TEARDOWN(c_parser_suite) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_CASE(c_test_parser_add_command) {
-    fossil_io_cmd_t cmd = { .name = "test_command" };
+    fossil_io_cmd_t cmd = { 
+        .name = "test_command", 
+        .description = "A test command", 
+        .flags = NULL, 
+        .flag_count = 0, 
+        .subcommands = NULL, 
+        .subcommand_count = 0, 
+        .handler = NULL 
+    };
 
     // Add a command to the parser
     fossil_io_parser_add_command(&cmd);
@@ -55,8 +63,24 @@ FOSSIL_TEST_CASE(c_test_parser_add_command) {
 }
 
 FOSSIL_TEST_CASE(c_test_parser_add_subcommand) {
-    fossil_io_cmd_t parent_cmd = { .name = "parent_command" };
-    fossil_io_cmd_t sub_cmd = { .name = "sub_command" };
+    fossil_io_cmd_t parent_cmd = { 
+        .name = "parent_command", 
+        .description = "A parent command", 
+        .flags = NULL, 
+        .flag_count = 0, 
+        .subcommands = NULL, 
+        .subcommand_count = 0, 
+        .handler = NULL 
+    };
+    fossil_io_cmd_t sub_cmd = { 
+        .name = "sub_command", 
+        .description = "A subcommand", 
+        .flags = NULL, 
+        .flag_count = 0, 
+        .subcommands = NULL, 
+        .subcommand_count = 0, 
+        .handler = NULL 
+    };
 
     // Add the parent command
     fossil_io_parser_add_command(&parent_cmd);
@@ -69,8 +93,21 @@ FOSSIL_TEST_CASE(c_test_parser_add_subcommand) {
 }
 
 FOSSIL_TEST_CASE(c_test_parser_add_flag) {
-    fossil_io_cmd_t cmd = { .name = "test_command" };
-    fossil_io_flag_t flag = { .name = "test_flag" };
+    fossil_io_cmd_t cmd = { 
+        .name = "test_command", 
+        .description = "A test command", 
+        .flags = NULL, 
+        .flag_count = 0, 
+        .subcommands = NULL, 
+        .subcommand_count = 0, 
+        .handler = NULL 
+    };
+    fossil_io_flag_t flag = { 
+        .name = "test_flag", 
+        .description = "A test flag", 
+        .type = FOSSIL_IO_TYPE_STRING, 
+        .value = NULL 
+    };
 
     // Add the command
     fossil_io_parser_add_command(&cmd);
@@ -90,8 +127,21 @@ FOSSIL_TEST_CASE(c_test_parser_has_builtin_flag) {
 }
 
 FOSSIL_TEST_CASE(c_test_parser_has_any_flag) {
-    fossil_io_cmd_t cmd = { .name = "test_command" };
-    fossil_io_flag_t flag = { .name = "test_flag" };
+    fossil_io_cmd_t cmd = { 
+        .name = "test_command", 
+        .description = "A test command", 
+        .flags = NULL, 
+        .flag_count = 0, 
+        .subcommands = NULL, 
+        .subcommand_count = 0, 
+        .handler = NULL 
+    };
+    fossil_io_flag_t flag = { 
+        .name = "test_flag", 
+        .description = "A test flag", 
+        .type = FOSSIL_IO_TYPE_STRING, 
+        .value = NULL 
+    };
 
     // Add the command and flag
     fossil_io_parser_add_command(&cmd);
@@ -102,8 +152,21 @@ FOSSIL_TEST_CASE(c_test_parser_has_any_flag) {
 }
 
 FOSSIL_TEST_CASE(c_test_parser_parse_arguments) {
-    fossil_io_cmd_t cmd = { .name = "test_command" };
-    fossil_io_flag_t flag = { .name = "--test_flag" };
+    fossil_io_cmd_t cmd = { 
+        .name = "test_command", 
+        .description = "A test command", 
+        .flags = NULL, 
+        .flag_count = 0, 
+        .subcommands = NULL, 
+        .subcommand_count = 0, 
+        .handler = NULL 
+    };
+    fossil_io_flag_t flag = { 
+        .name = "--test_flag", 
+        .description = "A test flag", 
+        .type = FOSSIL_IO_TYPE_STRING, 
+        .value = NULL 
+    };
 
     // Add the command and flag
     fossil_io_parser_add_command(&cmd);

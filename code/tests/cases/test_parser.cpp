@@ -45,7 +45,15 @@ FOSSIL_TEARDOWN(cpp_parser_suite) {
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
 FOSSIL_TEST_CASE(cpp_test_parser_add_command) {
-    fossil_io_cmd_t cmd = { .name = "test_command" };
+    fossil_io_cmd_t cmd = { 
+        "test_command", 
+        "A test command", 
+        nullptr, 
+        0, 
+        nullptr, 
+        0, 
+        nullptr 
+    };
 
     // Add a command to the parser
     fossil_io_parser_add_command(&cmd);
@@ -55,8 +63,24 @@ FOSSIL_TEST_CASE(cpp_test_parser_add_command) {
 }
 
 FOSSIL_TEST_CASE(cpp_test_parser_add_subcommand) {
-    fossil_io_cmd_t parent_cmd = { .name = "parent_command" };
-    fossil_io_cmd_t sub_cmd = { .name = "sub_command" };
+    fossil_io_cmd_t parent_cmd = { 
+        "parent_command", 
+        "A parent command", 
+        nullptr, 
+        0, 
+        nullptr, 
+        0, 
+        nullptr 
+    };
+    fossil_io_cmd_t sub_cmd = { 
+        "sub_command", 
+        "A subcommand", 
+        nullptr, 
+        0, 
+        nullptr, 
+        0, 
+        nullptr 
+    };
 
     // Add the parent command
     fossil_io_parser_add_command(&parent_cmd);
@@ -69,8 +93,21 @@ FOSSIL_TEST_CASE(cpp_test_parser_add_subcommand) {
 }
 
 FOSSIL_TEST_CASE(cpp_test_parser_add_flag) {
-    fossil_io_cmd_t cmd = { .name = "test_command" };
-    fossil_io_flag_t flag = { .name = "test_flag" };
+    fossil_io_cmd_t cmd = { 
+        "test_command", 
+        "A test command", 
+        nullptr, 
+        0, 
+        nullptr, 
+        0, 
+        nullptr 
+    };
+    fossil_io_flag_t flag = { 
+        "test_flag", 
+        "A test flag", 
+        FOSSIL_IO_TYPE_STRING, 
+        nullptr 
+    };
 
     // Add the command
     fossil_io_parser_add_command(&cmd);
@@ -90,8 +127,21 @@ FOSSIL_TEST_CASE(cpp_test_parser_has_builtin_flag) {
 }
 
 FOSSIL_TEST_CASE(cpp_test_parser_has_any_flag) {
-    fossil_io_cmd_t cmd = { .name = "test_command" };
-    fossil_io_flag_t flag = { .name = "test_flag" };
+    fossil_io_cmd_t cmd = { 
+        "test_command", 
+        "A test command", 
+        nullptr, 
+        0, 
+        nullptr, 
+        0, 
+        nullptr 
+    };
+    fossil_io_flag_t flag = { 
+        "test_flag", 
+        "A test flag", 
+        FOSSIL_IO_TYPE_STRING, 
+        nullptr 
+    };
 
     // Add the command and flag
     fossil_io_parser_add_command(&cmd);
@@ -102,8 +152,21 @@ FOSSIL_TEST_CASE(cpp_test_parser_has_any_flag) {
 }
 
 FOSSIL_TEST_CASE(cpp_test_parser_parse_arguments) {
-    fossil_io_cmd_t cmd = { .name = "test_command" };
-    fossil_io_flag_t flag = { .name = "--test_flag" };
+    fossil_io_cmd_t cmd = { 
+        "test_command", 
+        "A test command", 
+        nullptr, 
+        0, 
+        nullptr, 
+        0, 
+        nullptr 
+    };
+    fossil_io_flag_t flag = { 
+        "--test_flag", 
+        "A test flag", 
+        FOSSIL_IO_TYPE_STRING, 
+        nullptr 
+    };
 
     // Add the command and flag
     fossil_io_parser_add_command(&cmd);
