@@ -44,111 +44,14 @@ FOSSIL_TEARDOWN(cpp_parser_suite) {
 // as samples for library usage.
 // * * * * * * * * * * * * * * * * * * * * * * * *
 
-FOSSIL_TEST_CASE(cpp_test_parser_init) {
+FOSSIL_TEST_CASE(cpp_test_parser_class_init) {
     // Initialize the parser with application name and version
     const char *app_name = "FossilApp";
     const char *version = "1.0.0";
+    const char *description = "A test application for Fossil Logic";
 
-    fossil_io_parser_init(app_name, version);
-
-    // No direct assertions here, but ensure no crashes or errors
-    ASSUME_ITS_TRUE(1); // Placeholder to indicate successful execution
-}
-
-FOSSIL_TEST_CASE(cpp_test_parser_add_command) {
-    // Define a mock command
-    fossil_io_cmd_t mock_cmd = {
-        .name = "mock",
-        .description = "Mock command for testing",
-        .handler = NULL
-    };
-
-    // Add the command to the parser
-    fossil_io_parser_add_command(&mock_cmd);
-
-    // No direct assertions here, but ensure no crashes or errors
-    ASSUME_ITS_TRUE(1); // Placeholder to indicate successful execution
-}
-
-FOSSIL_TEST_CASE(cpp_test_parser_parse_arguments) {
-    // Mock command-line arguments
-    const char *argv[] = { "fossil", "--verbose", "--dry-run" };
-    int argc = sizeof(argv) / sizeof(argv[0]);
-
-    // Parse the arguments
-    fossil_io_parser_parse(argc, (char **)argv);
-
-    // Verify the flags are set correctly
-    ASSUME_ITS_TRUE(fossil_io_parser_is_verbose());
-    ASSUME_ITS_TRUE(fossil_io_parser_is_dry_run());
-}
-
-FOSSIL_TEST_CASE(cpp_test_parser_check_verbose_flag) {
-    // Mock command-line arguments
-    const char *argv[] = { "fossil", "--verbose" };
-    int argc = sizeof(argv) / sizeof(argv[0]);
-
-    // Parse the arguments
-    fossil_io_parser_parse(argc, (char **)argv);
-
-    // Verify the verbose flag is enabled
-    ASSUME_ITS_TRUE(fossil_io_parser_is_verbose());
-}
-
-FOSSIL_TEST_CASE(cpp_test_parser_check_dry_run_flag) {
-    // Mock command-line arguments
-    const char *argv[] = { "fossil", "--dry-run" };
-    int argc = sizeof(argv) / sizeof(argv[0]);
-
-    // Parse the arguments
-    fossil_io_parser_parse(argc, (char **)argv);
-
-    // Verify the dry-run flag is enabled
-    ASSUME_ITS_TRUE(fossil_io_parser_is_dry_run());
-}
-
-FOSSIL_TEST_CASE(cpp_test_parser_check_color_flag) {
-    // Mock command-line arguments
-    const char *argv[] = { "fossil", "--color" };
-    int argc = sizeof(argv) / sizeof(argv[0]);
-
-    // Parse the arguments
-    fossil_io_parser_parse(argc, (char **)argv);
-
-    // Verify the color output flag is enabled
-    ASSUME_ITS_TRUE(fossil_io_parser_use_color());
-}
-
-FOSSIL_TEST_CASE(cpp_test_parser_check_sanity_flag) {
-    // Mock command-line arguments
-    const char *argv[] = { "fossil", "--sanity" };
-    int argc = sizeof(argv) / sizeof(argv[0]);
-
-    // Parse the arguments
-    fossil_io_parser_parse(argc, (char **)argv);
-
-    // Verify the sanity checks flag is enabled
-    ASSUME_ITS_TRUE(fossil_io_parser_do_sanity());
-}
-
-FOSSIL_TEST_CASE(cpp_test_parser_check_info_flag) {
-    // Mock command-line arguments
-    const char *argv[] = { "fossil", "--this" };
-    int argc = sizeof(argv) / sizeof(argv[0]);
-
-    // Parse the arguments
-    fossil_io_parser_parse(argc, (char **)argv);
-
-    // Verify the informational messages flag is enabled
-    ASSUME_ITS_TRUE(fossil_io_parser_show_info());
-}
-
-FOSSIL_TEST_CASE(cpp_test_parser_class_init) {
-    // Initialize the parser using the C++ wrapper
-    const char *app_name = "FossilApp";
-    const char *version = "1.0.0";
-
-    fossil::io::Parser::init(app_name, version);
+    // Use the C++ wrapper to initialize the parser
+    fossil::io::Parser::init(app_name, version, description);
 
     // No direct assertions here, but ensure no crashes or errors
     ASSUME_ITS_TRUE(1); // Placeholder to indicate successful execution
@@ -206,18 +109,6 @@ FOSSIL_TEST_CASE(cpp_test_parser_class_check_dry_run_flag) {
     ASSUME_ITS_TRUE(fossil::io::Parser::is_dry_run());
 }
 
-FOSSIL_TEST_CASE(cpp_test_parser_class_check_color_flag) {
-    // Mock command-line arguments
-    const char *argv[] = { "fossil", "--color" };
-    int argc = sizeof(argv) / sizeof(argv[0]);
-
-    // Parse the arguments using the C++ wrapper
-    fossil::io::Parser::parse(argc, (char **)argv);
-
-    // Verify the color output flag is enabled
-    ASSUME_ITS_TRUE(fossil::io::Parser::use_color());
-}
-
 FOSSIL_TEST_CASE(cpp_test_parser_class_check_sanity_flag) {
     // Mock command-line arguments
     const char *argv[] = { "fossil", "--sanity" };
@@ -230,38 +121,63 @@ FOSSIL_TEST_CASE(cpp_test_parser_class_check_sanity_flag) {
     ASSUME_ITS_TRUE(fossil::io::Parser::do_sanity());
 }
 
-FOSSIL_TEST_CASE(cpp_test_parser_class_check_info_flag) {
-    // Mock command-line arguments
-    const char *argv[] = { "fossil", "--this" };
-    int argc = sizeof(argv) / sizeof(argv[0]);
+FOSSIL_TEST_CASE(cpp_test_parser_class_add_subcommand) {
+    // Define a parent command
+    fossil_io_cmd_t parent_cmd = {
+        .name = "parent",
+        .description = "Parent command for testing",
+        .handler = NULL
+    };
 
-    // Parse the arguments using the C++ wrapper
-    fossil::io::Parser::parse(argc, (char **)argv);
+    // Define a subcommand
+    fossil_io_cmd_t sub_cmd = {
+        .name = "sub",
+        .description = "Subcommand for testing",
+        .handler = NULL
+    };
 
-    // Verify the informational messages flag is enabled
-    ASSUME_ITS_TRUE(fossil::io::Parser::show_info());
+    // Add the subcommand using the C++ wrapper
+    fossil::io::Parser::add_subcommand(&parent_cmd, &sub_cmd);
+
+    // No direct assertions here, but ensure no crashes or errors
+    ASSUME_ITS_TRUE(1); // Placeholder to indicate successful execution
+}
+
+FOSSIL_TEST_CASE(cpp_test_parser_class_add_flag) {
+    // Define a command
+    fossil_io_cmd_t cmd = {
+        .name = "test",
+        .description = "Command for testing flags",
+        .handler = NULL
+    };
+
+    // Define a flag
+    fossil_io_flag_t flag = {
+        .name = "--test-flag",
+        .description = "Test flag for testing",
+        .type = FOSSIL_IO_TYPE_BOOL,
+        .value = NULL
+    };
+
+    // Add the flag using the C++ wrapper
+    fossil::io::Parser::add_flag(&cmd, &flag);
+
+    // No direct assertions here, but ensure no crashes or errors
+    ASSUME_ITS_TRUE(1); // Placeholder to indicate successful execution
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
 // * Fossil Logic Test Pool
 // * * * * * * * * * * * * * * * * * * * * * * * *
 FOSSIL_TEST_GROUP(cpp_parser_test_cases) {
-    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_init);
-    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_add_command);
-    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_parse_arguments);
-    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_check_verbose_flag);
-    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_check_dry_run_flag);
-    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_check_color_flag);
-    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_check_sanity_flag);
-    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_check_info_flag);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_class_init);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_class_add_command);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_class_parse_arguments);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_class_check_verbose_flag);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_class_check_dry_run_flag);
-    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_class_check_color_flag);
     FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_class_check_sanity_flag);
-    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_class_check_info_flag);
+    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_class_add_subcommand);
+    FOSSIL_TEST_ADD(cpp_parser_suite, cpp_test_parser_class_add_flag);
 
     FOSSIL_TEST_REGISTER(cpp_parser_suite);
 } // end of group

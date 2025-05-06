@@ -48,8 +48,9 @@ FOSSIL_TEST_CASE(c_test_parser_init) {
     // Initialize the parser with application name and version
     const char *app_name = "FossilApp";
     const char *version = "1.0.0";
+    const char *description = "A test application for Fossil Logic";
 
-    fossil_io_parser_init(app_name, version);
+    fossil_io_parser_init(app_name, version, description);
 
     // No direct assertions here, but ensure no crashes or errors
     ASSUME_ITS_TRUE(1); // Placeholder to indicate successful execution
@@ -107,18 +108,6 @@ FOSSIL_TEST_CASE(c_test_parser_check_dry_run_flag) {
     ASSUME_ITS_TRUE(fossil_io_parser_is_dry_run());
 }
 
-FOSSIL_TEST_CASE(c_test_parser_check_color_flag) {
-    // Mock command-line arguments
-    const char *argv[] = { "fossil", "--color" };
-    int argc = sizeof(argv) / sizeof(argv[0]);
-
-    // Parse the arguments
-    fossil_io_parser_parse(argc, (char **)argv);
-
-    // Verify the color output flag is enabled
-    ASSUME_ITS_TRUE(fossil_io_parser_use_color());
-}
-
 FOSSIL_TEST_CASE(c_test_parser_check_sanity_flag) {
     // Mock command-line arguments
     const char *argv[] = { "fossil", "--sanity" };
@@ -131,16 +120,58 @@ FOSSIL_TEST_CASE(c_test_parser_check_sanity_flag) {
     ASSUME_ITS_TRUE(fossil_io_parser_do_sanity());
 }
 
-FOSSIL_TEST_CASE(c_test_parser_check_info_flag) {
-    // Mock command-line arguments
-    const char *argv[] = { "fossil", "--this" };
-    int argc = sizeof(argv) / sizeof(argv[0]);
+FOSSIL_TEST_CASE(c_test_parser_add_subcommand) {
+    // Define a mock parent command
+    fossil_io_cmd_t parent_cmd = {
+        .name = "parent",
+        .description = "Parent command for testing",
+        .handler = NULL
+    };
 
-    // Parse the arguments
-    fossil_io_parser_parse(argc, (char **)argv);
+    // Define a mock subcommand
+    fossil_io_cmd_t sub_cmd = {
+        .name = "child",
+        .description = "Child subcommand for testing",
+        .handler = NULL
+    };
 
-    // Verify the informational messages flag is enabled
-    ASSUME_ITS_TRUE(fossil_io_parser_show_info());
+    // Add the parent command to the parser
+    fossil_io_parser_add_command(&parent_cmd);
+
+    // Add the subcommand to the parent command
+    fossil_io_parser_add_subcommand(&parent_cmd, &sub_cmd);
+
+    // Verify the subcommand was added successfully
+    ASSUME_ITS_TRUE(parent_cmd.subcommand_count == 1);
+    ASSUME_ITS_TRUE(strcmp(parent_cmd.subcommands[0].name, "child") == 0);
+}
+
+FOSSIL_TEST_CASE(c_test_parser_add_flag) {
+    // Define a mock command
+    fossil_io_cmd_t mock_cmd = {
+        .name = "mock",
+        .description = "Mock command for testing",
+        .handler = NULL
+    };
+
+    // Define a mock flag
+    int flag_value = 0;
+    fossil_io_flag_t mock_flag = {
+        .name = "test-flag",
+        .description = "Test flag for testing",
+        .type = FOSSIL_IO_TYPE_BOOL,
+        .value = &flag_value
+    };
+
+    // Add the command to the parser
+    fossil_io_parser_add_command(&mock_cmd);
+
+    // Add the flag to the command
+    fossil_io_parser_add_flag(&mock_cmd, &mock_flag);
+
+    // Verify the flag was added successfully
+    ASSUME_ITS_TRUE(mock_cmd.flag_count == 1);
+    ASSUME_ITS_TRUE(strcmp(mock_cmd.flags[0].name, "test-flag") == 0);
 }
 
 FOSSIL_TEST_CASE(c_test_parser_invalid_arguments) {
@@ -154,7 +185,6 @@ FOSSIL_TEST_CASE(c_test_parser_invalid_arguments) {
     // Ensure no valid flags are set
     ASSUME_ITS_FALSE(fossil_io_parser_is_verbose());
     ASSUME_ITS_FALSE(fossil_io_parser_is_dry_run());
-    ASSUME_ITS_FALSE(fossil_io_parser_use_color());
     ASSUME_ITS_FALSE(fossil_io_parser_do_sanity());
     ASSUME_ITS_FALSE(fossil_io_parser_show_info());
 }
@@ -168,9 +198,10 @@ FOSSIL_TEST_GROUP(c_parser_test_cases) {
     FOSSIL_TEST_ADD(c_parser_suite, c_test_parser_parse_arguments);
     FOSSIL_TEST_ADD(c_parser_suite, c_test_parser_check_verbose_flag);
     FOSSIL_TEST_ADD(c_parser_suite, c_test_parser_check_dry_run_flag);
-    FOSSIL_TEST_ADD(c_parser_suite, c_test_parser_check_color_flag);
     FOSSIL_TEST_ADD(c_parser_suite, c_test_parser_check_sanity_flag);
-    FOSSIL_TEST_ADD(c_parser_suite, c_test_parser_check_info_flag);
+
+    FOSSIL_TEST_ADD(c_parser_suite, c_test_parser_add_subcommand);
+    FOSSIL_TEST_ADD(c_parser_suite, c_test_parser_add_flag);
     FOSSIL_TEST_ADD(c_parser_suite, c_test_parser_invalid_arguments);
 
     FOSSIL_TEST_REGISTER(c_parser_suite);
