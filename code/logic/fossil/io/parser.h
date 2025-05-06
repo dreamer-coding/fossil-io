@@ -95,6 +95,63 @@ void fossil_io_parser_add_command(fossil_io_cmd_t *cmd);
 void fossil_io_parser_add_subcommand(fossil_io_cmd_t *parent_cmd, fossil_io_cmd_t *sub_cmd);
 
 /**
+ * @brief Checks if a command exists in the parser.
+ *
+ * This function determines whether a command with the specified name
+ * has been registered in the parser.
+ *
+ * @param cmd_name The name of the command to check.
+ * @return Non-zero if the command exists, otherwise 0.
+ */
+int fossil_io_parser_has_command(const char *cmd_name);
+
+/**
+ * @brief Checks if a subcommand exists under a parent command.
+ *
+ * This function determines whether a subcommand with the specified name
+ * has been registered under the given parent command.
+ *
+ * @param parent_cmd A pointer to the parent command structure.
+ * @param sub_cmd_name The name of the subcommand to check.
+ * @return Non-zero if the subcommand exists, otherwise 0.
+ */
+int fossil_io_parser_has_subcommand(fossil_io_cmd_t *parent_cmd, const char *sub_cmd_name);
+
+/**
+ * @brief Checks if a flag exists in a command.
+ *
+ * This function determines whether a flag with the specified name
+ * has been registered in the given command.
+ *
+ * @param cmd A pointer to the command structure.
+ * @param flag_name The name of the flag to check.
+ * @return Non-zero if the flag exists, otherwise 0.
+ */
+int fossil_io_parser_has_flag(fossil_io_cmd_t *cmd, const char *flag_name);
+
+/**
+ * @brief Checks if a built-in flag exists.
+ *
+ * This function determines whether a built-in flag with the specified name
+ * is recognized by the parser.
+ *
+ * @param flag_name The name of the flag to check.
+ * @return Non-zero if the built-in flag exists, otherwise 0.
+ */
+int fossil_io_parser_has_builtin_flag(const char *flag_name);
+
+/**
+ * @brief Checks if any flag exists in the parser.
+ *
+ * This function determines whether a flag with the specified name
+ * has been registered in any command or as a built-in flag.
+ *
+ * @param flag_name The name of the flag to check.
+ * @return Non-zero if the flag exists, otherwise 0.
+ */
+int fossil_io_parser_has_any_flag(const char *flag_name);
+
+/**
  * @brief Adds a flag to a command.
  *
  * This function registers a flag that can be used with a specific command.
