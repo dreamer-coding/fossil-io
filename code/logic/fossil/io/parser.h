@@ -69,8 +69,9 @@ struct fossil_io_cmd {
  *
  * @param app_name The name of the application.
  * @param version The version of the application.
+ * @param discription A brief description of the application.
  */
-void fossil_io_parser_init(const char *app_name, const char *version);
+void fossil_io_parser_init(const char *app_name, const char *version, const char *discription);
 
 /**
  * @brief Adds a command to the fossil I/O parser.
@@ -81,6 +82,28 @@ void fossil_io_parser_init(const char *app_name, const char *version);
  * @param cmd A pointer to the command structure to be added.
  */
 void fossil_io_parser_add_command(fossil_io_cmd_t *cmd);
+
+/**
+ * @brief Adds a subcommand to a parent command.
+ *
+ * This function registers a subcommand under a specified parent command.
+ * Subcommands must be added before calling the parse function.
+ *
+ * @param parent_cmd A pointer to the parent command structure.
+ * @param sub_cmd A pointer to the subcommand structure to be added.
+ */
+void fossil_io_parser_add_subcommand(fossil_io_cmd_t *parent_cmd, fossil_io_cmd_t *sub_cmd);
+
+/**
+ * @brief Adds a flag to a command.
+ *
+ * This function registers a flag that can be used with a specific command.
+ * Flags must be added before calling the parse function.
+ *
+ * @param cmd A pointer to the command structure to which the flag will be added.
+ * @param flag A pointer to the flag structure to be added.
+ */
+void fossil_io_parser_add_flag(fossil_io_cmd_t *cmd, fossil_io_flag_t *flag);
 
 /**
  * @brief Parses the command-line arguments.
@@ -112,16 +135,6 @@ int fossil_io_parser_is_dry_run(void);
  * @return Non-zero if verbose mode is enabled, otherwise 0.
  */
 int fossil_io_parser_is_verbose(void);
-
-/**
- * @brief Checks if color output is enabled.
- *
- * This accessor function determines whether the parser should use colored
- * output for better readability in supported terminals.
- *
- * @return Non-zero if color output is enabled, otherwise 0.
- */
-int fossil_io_parser_use_color(void);
 
 /**
  * @brief Checks if sanity checks are enabled.
@@ -165,9 +178,10 @@ namespace fossil {
              *
              * @param app_name The name of the application.
              * @param version The version of the application.
+             * @param discription A brief description of the application.
              */
-            static void init(const char *app_name, const char *version) {
-                fossil_io_parser_init(app_name, version);
+            static void init(const char *app_name, const char *version, const char *discription) {
+                fossil_io_parser_init(app_name, version, discription);
             }
 
             /**
@@ -177,6 +191,26 @@ namespace fossil {
              */
             static void add_command(fossil_io_cmd_t *cmd) {
                 fossil_io_parser_add_command(cmd);
+            }
+
+            /**
+             * Adds a subcommand to a parent command.
+             *
+             * @param parent_cmd A pointer to the parent command structure.
+             * @param sub_cmd A pointer to the subcommand structure to be added.
+             */
+            static void add_subcommand(fossil_io_cmd_t *parent_cmd, fossil_io_cmd_t *sub_cmd) {
+                fossil_io_parser_add_subcommand(parent_cmd, sub_cmd);
+            }
+
+            /**
+             * Adds a flag to a command.
+             *
+             * @param cmd A pointer to the command structure to which the flag will be added.
+             * @param flag A pointer to the flag structure to be added.
+             */
+            static void add_flag(fossil_io_cmd_t *cmd, fossil_io_flag_t *flag) {
+                fossil_io_parser_add_flag(cmd, flag);
             }
 
             /**
@@ -205,15 +239,6 @@ namespace fossil {
              */
             static int is_verbose() {
                 return fossil_io_parser_is_verbose();
-            }
-
-            /**
-             * Checks if color output is enabled.
-             *
-             * @return Non-zero if color output is enabled, otherwise 0.
-             */
-            static int use_color() {
-                return fossil_io_parser_use_color();
             }
 
             /**
