@@ -60,7 +60,7 @@ static const char* suggest_command(const char *input) {
     return suggest_closest(input, commands, g_cmd_count);
 }
 
-static void print_this() {
+static void print_this(void) {
     fossil_io_printf("{blue,bold}Application:{cyan,italic} %s{reset}\n", g_app_name);
     fossil_io_printf("{blue,bold}Version    :{cyan,italic} v%s{reset}\n", g_version);
     fossil_io_printf("{blue,bold}Description:{cyan,italic} %s{reset}\n", g_description);
