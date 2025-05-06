@@ -57,10 +57,14 @@ FOSSIL_TEST_CASE(c_test_parser_init) {
 }
 
 FOSSIL_TEST_CASE(c_test_parser_add_command) {
-    // Define a mock command
+    // Define a mock command with initialized fields
     fossil_io_cmd_t mock_cmd = {
         .name = "mock",
         .description = "Mock command for testing",
+        .flags = NULL,
+        .flag_count = 0,
+        .subcommands = NULL,
+        .subcommand_count = 0,
         .handler = NULL
     };
 
@@ -147,14 +151,18 @@ FOSSIL_TEST_CASE(c_test_parser_add_subcommand) {
 }
 
 FOSSIL_TEST_CASE(c_test_parser_add_flag) {
-    // Define a mock command
+    // Define a mock command with initialized fields
     fossil_io_cmd_t mock_cmd = {
         .name = "mock",
         .description = "Mock command for testing",
+        .flags = NULL,
+        .flag_count = 0,
+        .subcommands = NULL,
+        .subcommand_count = 0,
         .handler = NULL
     };
 
-    // Define a mock flag
+    // Define a mock flag with initialized fields
     int flag_value = 0;
     fossil_io_flag_t mock_flag = {
         .name = "test-flag",

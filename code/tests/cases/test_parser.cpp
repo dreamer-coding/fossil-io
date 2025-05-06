@@ -62,6 +62,10 @@ FOSSIL_TEST_CASE(cpp_test_parser_class_add_command) {
     fossil_io_cmd_t mock_cmd = {
         .name = "mock",
         .description = "Mock command for testing",
+        .flags = NULL,
+        .flag_count = 0,
+        .subcommands = NULL,
+        .subcommand_count = 0,
         .handler = NULL
     };
 
