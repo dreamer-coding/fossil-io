@@ -22,8 +22,12 @@
  * Copyright (C) 2013-Current Fossil Logic. All rights reserved.
  * -----------------------------------------------------------------------------
  */
-#ifndef FOSSIL_IO_CIPHER_H
-#define FOSSIL_IO_CIPHER_H
+#ifndef FOSSIL_IO_CUBE_H
+#define FOSSIL_IO_CUBE_H
+
+#include <stddef.h>
+#include <stdint.h>
+#include "output.h"
 
 #ifdef __cplusplus
 extern "C"
