@@ -2769,11 +2769,1608 @@ int32_t fossil_io_cube_option_valid(
 #include <string>
 
 namespace fossil::io
+
 {
 
+class Cube
 
+{
 
-} // namespace fossil
+public:
+
+    Cube() :
+
+        cube_(nullptr)
+
+    {
+
+    }
+
+    explicit Cube(
+
+        const fossil_io_cube_config_t &config
+
+    ) :
+
+        cube_(fossil_io_cube_create(&config))
+
+    {
+
+    }
+
+    ~Cube()
+
+    {
+
+        if (cube_)
+
+        {
+
+            fossil_io_cube_destroy(cube_);
+
+            cube_ = nullptr;
+
+        }
+
+    }
+
+    Cube(const Cube &) = delete;
+
+    Cube &operator=(const Cube &) = delete;
+
+    int32_t init(
+
+        const fossil_io_cube_config_t &config
+
+    )
+
+    {
+
+        return fossil_io_cube_init(
+
+            cube_,
+
+            &config
+
+        );
+
+    }
+
+    int32_t shutdown()
+
+    {
+
+        return fossil_io_cube_shutdown(cube_);
+
+    }
+
+    int32_t terminal_size(
+
+        fossil_io_cube_size_t &size
+
+    )
+
+    {
+
+        return fossil_io_cube_terminal_size(
+
+            cube_,
+
+            &size
+
+        );
+
+    }
+
+    int32_t clear()
+
+    {
+
+        return fossil_io_cube_clear(cube_);
+
+    }
+
+    int32_t cursor_move(
+
+        int32_t x,
+
+        int32_t y
+
+    )
+
+    {
+
+        return fossil_io_cube_cursor_move(
+
+            cube_,
+
+            x,
+
+            y
+
+        );
+
+    }
+
+    int32_t cursor_show()
+
+    {
+
+        return fossil_io_cube_cursor_show(cube_);
+
+    }
+
+    int32_t cursor_hide()
+
+    {
+
+        return fossil_io_cube_cursor_hide(cube_);
+
+    }
+
+    int32_t terminal_title(
+
+        const std::string &title
+
+    )
+
+    {
+
+        return fossil_io_cube_terminal_title(
+
+            cube_,
+
+            title.c_str()
+
+        );
+
+    }
+
+    int32_t begin()
+
+    {
+
+        return fossil_io_cube_begin(cube_);
+
+    }
+
+    int32_t render()
+
+    {
+
+        return fossil_io_cube_render(cube_);
+
+    }
+
+    int32_t end()
+
+    {
+
+        return fossil_io_cube_end(cube_);
+
+    }
+
+    int32_t draw_text(
+
+        int32_t x,
+
+        int32_t y,
+
+        const std::string &text
+
+    )
+
+    {
+
+        return fossil_io_cube_draw_text(
+
+            cube_,
+
+            x,
+
+            y,
+
+            text.c_str()
+
+        );
+
+    }
+
+    int32_t draw_text_styled(
+
+        int32_t x,
+
+        int32_t y,
+
+        const std::string &text,
+
+        const std::string &style
+
+    )
+
+    {
+
+        return fossil_io_cube_draw_text_styled(
+
+            cube_,
+
+            x,
+
+            y,
+
+            text.c_str(),
+
+            style.c_str()
+
+        );
+
+    }
+
+    int32_t draw_border(
+
+        const fossil_io_cube_rect_t &rect,
+
+        const std::string &style
+
+    )
+
+    {
+
+        return fossil_io_cube_draw_border(
+
+            cube_,
+
+            &rect,
+
+            style.c_str()
+
+        );
+
+    }
+
+    int32_t fill(
+
+        const fossil_io_cube_rect_t &rect,
+
+        char character
+
+    )
+
+    {
+
+        return fossil_io_cube_fill(
+
+            cube_,
+
+            &rect,
+
+            character
+
+        );
+
+    }
+
+    fossil_io_cube_window_t *window_create(
+
+        const std::string &id,
+
+        const fossil_io_cube_rect_t &rect
+
+    )
+
+    {
+
+        return fossil_io_cube_window_create(
+
+            cube_,
+
+            id.c_str(),
+
+            &rect
+
+        );
+
+    }
+
+    int32_t window_destroy(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_window_destroy(
+
+            cube_,
+
+            id.c_str()
+
+        );
+
+    }
+
+    fossil_io_cube_window_t *window_find(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_window_find(
+
+            cube_,
+
+            id.c_str()
+
+        );
+
+    }
+
+    int32_t window_set_rect(
+
+        fossil_io_cube_window_t *window,
+
+        const fossil_io_cube_rect_t &rect
+
+    )
+
+    {
+
+        return fossil_io_cube_window_set_rect(
+
+            window,
+
+            &rect
+
+        );
+
+    }
+
+    int32_t window_set_title(
+
+        fossil_io_cube_window_t *window,
+
+        const std::string &title
+
+    )
+
+    {
+
+        return fossil_io_cube_window_set_title(
+
+            window,
+
+            title.c_str()
+
+        );
+
+    }
+
+    int32_t window_set_style(
+
+        fossil_io_cube_window_t *window,
+
+        const std::string &style
+
+    )
+
+    {
+
+        return fossil_io_cube_window_set_style(
+
+            window,
+
+            style.c_str()
+
+        );
+
+    }
+
+    int32_t window_draw_text(
+
+        fossil_io_cube_window_t *window,
+
+        int32_t x,
+
+        int32_t y,
+
+        const std::string &text
+
+    )
+
+    {
+
+        return fossil_io_cube_window_draw_text(
+
+            window,
+
+            x,
+
+            y,
+
+            text.c_str()
+
+        );
+
+    }
+
+    int32_t window_clear(
+
+        fossil_io_cube_window_t *window
+
+    )
+
+    {
+
+        return fossil_io_cube_window_clear(window);
+
+    }
+
+    int32_t window_raise(
+
+        fossil_io_cube_window_t *window
+
+    )
+
+    {
+
+        return fossil_io_cube_window_raise(window);
+
+    }
+
+    int32_t window_lower(
+
+        fossil_io_cube_window_t *window
+
+    )
+
+    {
+
+        return fossil_io_cube_window_lower(window);
+
+    }
+
+    fossil_io_cube_panel_t *panel_create(
+
+        const std::string &id,
+
+        const fossil_io_cube_rect_t &rect
+
+    )
+
+    {
+
+        return fossil_io_cube_panel_create(
+
+            cube_,
+
+            id.c_str(),
+
+            &rect
+
+        );
+
+    }
+
+    fossil_io_cube_panel_t *panel_find(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_panel_find(
+
+            cube_,
+
+            id.c_str()
+
+        );
+
+    }
+
+    int32_t panel_destroy(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_panel_destroy(
+
+            cube_,
+
+            id.c_str()
+
+        );
+
+    }
+
+    int32_t panel_add_window(
+
+        fossil_io_cube_panel_t *panel,
+
+        fossil_io_cube_window_t *window
+
+    )
+
+    {
+
+        return fossil_io_cube_panel_add_window(
+
+            panel,
+
+            window
+
+        );
+
+    }
+
+    fossil_io_cube_widget_t *widget_create(
+
+        const std::string &id,
+
+        const std::string &type,
+
+        const fossil_io_cube_rect_t &rect
+
+    )
+
+    {
+
+        return fossil_io_cube_widget_create(
+
+            cube_,
+
+            id.c_str(),
+
+            type.c_str(),
+
+            &rect
+
+        );
+
+    }
+
+    fossil_io_cube_widget_t *widget_find(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_widget_find(
+
+            cube_,
+
+            id.c_str()
+
+        );
+
+    }
+
+    int32_t widget_destroy(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_widget_destroy(
+
+            cube_,
+
+            id.c_str()
+
+        );
+
+    }
+
+    int32_t widget_set_text(
+
+        fossil_io_cube_widget_t *widget,
+
+        const std::string &text
+
+    )
+
+    {
+
+        return fossil_io_cube_widget_set_text(
+
+            widget,
+
+            text.c_str()
+
+        );
+
+    }
+
+    std::string widget_get_text(
+
+        fossil_io_cube_widget_t *widget
+
+    )
+
+    {
+
+        const char *text =
+
+            fossil_io_cube_widget_get_text(widget);
+
+        return text ? std::string(text) : std::string();
+
+    }
+
+    int32_t widget_set_rect(
+
+        fossil_io_cube_widget_t *widget,
+
+        const fossil_io_cube_rect_t &rect
+
+    )
+
+    {
+
+        return fossil_io_cube_widget_set_rect(
+
+            widget,
+
+            &rect
+
+        );
+
+    }
+
+    int32_t widget_set_property(
+
+        fossil_io_cube_widget_t *widget,
+
+        const std::string &property,
+
+        const std::string &value
+
+    )
+
+    {
+
+        return fossil_io_cube_widget_set_property(
+
+            widget,
+
+            property.c_str(),
+
+            value.c_str()
+
+        );
+
+    }
+
+    int32_t widget_get_property(
+
+        fossil_io_cube_widget_t *widget,
+
+        const std::string &property,
+
+        std::string &value
+
+    )
+
+    {
+
+        char buffer[FOSSIL_IO_CUBE_MAX_TEXT];
+
+        int32_t result =
+
+            fossil_io_cube_widget_get_property(
+
+                widget,
+
+                property.c_str(),
+
+                buffer,
+
+                sizeof(buffer)
+
+            );
+
+        if (result == 0)
+
+            value = buffer;
+
+        return result;
+
+    }
+
+    int32_t widget_set_event_callback(
+
+        fossil_io_cube_widget_t *widget,
+
+        fossil_io_cube_event_callback_t callback,
+
+        void *user_data
+
+    )
+
+    {
+
+        return fossil_io_cube_widget_set_event_callback(
+
+            widget,
+
+            callback,
+
+            user_data
+
+        );
+
+    }
+
+    int32_t widget_set_render_callback(
+
+        fossil_io_cube_widget_t *widget,
+
+        fossil_io_cube_render_callback_t callback,
+
+        void *user_data
+
+    )
+
+    {
+
+        return fossil_io_cube_widget_set_render_callback(
+
+            widget,
+
+            callback,
+
+            user_data
+
+        );
+
+    }
+
+    int32_t widget_focus(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_widget_focus(
+
+            cube_,
+
+            id.c_str()
+
+        );
+
+    }
+
+    fossil_io_cube_widget_t *widget_focused()
+
+    {
+
+        return fossil_io_cube_widget_focused(cube_);
+
+    }
+
+    fossil_io_cube_menu_t *menu_create(
+
+        const std::string &id,
+
+        const fossil_io_cube_rect_t &rect
+
+    )
+
+    {
+
+        return fossil_io_cube_menu_create(
+
+            cube_,
+
+            id.c_str(),
+
+            &rect
+
+        );
+
+    }
+
+    fossil_io_cube_menu_t *menu_find(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_menu_find(
+
+            cube_,
+
+            id.c_str()
+
+        );
+
+    }
+
+    int32_t menu_destroy(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_menu_destroy(
+
+            cube_,
+
+            id.c_str()
+
+        );
+
+    }
+
+    int32_t menu_add_item(
+
+        fossil_io_cube_menu_t *menu,
+
+        const std::string &id,
+
+        const std::string &label
+
+    )
+
+    {
+
+        return fossil_io_cube_menu_add_item(
+
+            menu,
+
+            id.c_str(),
+
+            label.c_str()
+
+        );
+
+    }
+
+    int32_t menu_remove_item(
+
+        fossil_io_cube_menu_t *menu,
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_menu_remove_item(
+
+            menu,
+
+            id.c_str()
+
+        );
+
+    }
+
+    int32_t menu_select(
+
+        fossil_io_cube_menu_t *menu,
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_menu_select(
+
+            menu,
+
+            id.c_str()
+
+        );
+
+    }
+
+    std::string menu_selected(
+
+        fossil_io_cube_menu_t *menu
+
+    )
+
+    {
+
+        const char *id =
+
+            fossil_io_cube_menu_selected(menu);
+
+        return id ? std::string(id) : std::string();
+
+    }
+
+    int32_t menu_set_mode(
+
+        fossil_io_cube_menu_t *menu,
+
+        const std::string &mode
+
+    )
+
+    {
+
+        return fossil_io_cube_menu_set_mode(
+
+            menu,
+
+            mode.c_str()
+
+        );
+
+    }
+
+    int32_t menu_move(
+
+        fossil_io_cube_menu_t *menu,
+
+        const std::string &direction
+
+    )
+
+    {
+
+        return fossil_io_cube_menu_move(
+
+            menu,
+
+            direction.c_str()
+
+        );
+
+    }
+
+    fossil_io_cube_layout_t *layout_create(
+
+        const std::string &id,
+
+        const std::string &type
+
+    )
+
+    {
+
+        return fossil_io_cube_layout_create(
+
+            cube_,
+
+            id.c_str(),
+
+            type.c_str()
+
+        );
+
+    }
+
+    fossil_io_cube_layout_t *layout_find(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_layout_find(
+
+            cube_,
+
+            id.c_str()
+
+        );
+
+    }
+
+    int32_t layout_destroy(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_layout_destroy(
+
+            cube_,
+
+            id.c_str()
+
+        );
+
+    }
+
+    int32_t layout_add_widget(
+
+        fossil_io_cube_layout_t *layout,
+
+        fossil_io_cube_widget_t *widget
+
+    )
+
+    {
+
+        return fossil_io_cube_layout_add_widget(
+
+            layout,
+
+            widget
+
+        );
+
+    }
+
+    int32_t layout_apply(
+
+        fossil_io_cube_layout_t *layout
+
+    )
+
+    {
+
+        return fossil_io_cube_layout_apply(layout);
+
+    }
+
+    int32_t action_register(
+
+        const std::string &id,
+
+        fossil_io_cube_action_callback_t callback,
+
+        void *user_data
+
+    )
+
+    {
+
+        return fossil_io_cube_action_register(
+
+            cube_,
+
+            id.c_str(),
+
+            callback,
+
+            user_data
+
+        );
+
+    }
+
+    int32_t action_execute(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_action_execute(
+
+            cube_,
+
+            id.c_str()
+
+        );
+
+    }
+
+    int32_t action_bind(
+
+        const std::string &key,
+
+        const std::string &action
+
+    )
+
+    {
+
+        return fossil_io_cube_action_bind(
+
+            cube_,
+
+            key.c_str(),
+
+            action.c_str()
+
+        );
+
+    }
+
+    int32_t action_unbind(
+
+        const std::string &key
+
+    )
+
+    {
+
+        return fossil_io_cube_action_unbind(
+
+            cube_,
+
+            key.c_str()
+
+        );
+
+    }
+
+    int32_t input(
+
+        fossil_io_cube_event_t &event
+
+    )
+
+    {
+
+        return fossil_io_cube_input(
+
+            cube_,
+
+            &event
+
+        );
+
+    }
+
+    int32_t event(
+
+        const fossil_io_cube_event_t &event
+
+    )
+
+    {
+
+        return fossil_io_cube_event(
+
+            cube_,
+
+            &event
+
+        );
+
+    }
+
+    int32_t poll()
+
+    {
+
+        return fossil_io_cube_poll(cube_);
+
+    }
+
+    int32_t update()
+
+    {
+
+        return fossil_io_cube_update(cube_);
+
+    }
+
+    int32_t run()
+
+    {
+
+        return fossil_io_cube_run(cube_);
+
+    }
+
+    int32_t quit(
+
+        const std::string &reason
+
+    )
+
+    {
+
+        return fossil_io_cube_quit(
+
+            cube_,
+
+            reason.c_str()
+
+        );
+
+    }
+
+    int32_t running()
+
+    {
+
+        return fossil_io_cube_running(cube_);
+
+    }
+
+    int32_t focus_move(
+
+        const std::string &direction
+
+    )
+
+    {
+
+        return fossil_io_cube_focus_move(
+
+            cube_,
+
+            direction.c_str()
+
+        );
+
+    }
+
+    int32_t focus_order(
+
+        fossil_io_cube_widget_t *widget,
+
+        int32_t order
+
+    )
+
+    {
+
+        return fossil_io_cube_focus_order(
+
+            widget,
+
+            order
+
+        );
+
+    }
+
+    int32_t scroll(
+
+        fossil_io_cube_widget_t *widget,
+
+        const std::string &direction,
+
+        int32_t amount
+
+    )
+
+    {
+
+        return fossil_io_cube_scroll(
+
+            widget,
+
+            direction.c_str(),
+
+            amount
+
+        );
+
+    }
+
+    int32_t style_register(
+
+        const std::string &id,
+
+        const fossil_io_cube_style_t &style
+
+    )
+
+    {
+
+        return fossil_io_cube_style_register(
+
+            cube_,
+
+            id.c_str(),
+
+            &style
+
+        );
+
+    }
+
+    int32_t style_apply(
+
+        fossil_io_cube_widget_t *widget,
+
+        const std::string &style
+
+    )
+
+    {
+
+        return fossil_io_cube_style_apply(
+
+            widget,
+
+            style.c_str()
+
+        );
+
+    }
+
+    int32_t window_style(
+
+        fossil_io_cube_window_t *window,
+
+        const std::string &style
+
+    )
+
+    {
+
+        return fossil_io_cube_window_style(
+
+            window,
+
+            style.c_str()
+
+        );
+
+    }
+
+    int32_t input_set(
+
+        fossil_io_cube_widget_t *widget,
+
+        const std::string &text
+
+    )
+
+    {
+
+        return fossil_io_cube_input_set(
+
+            widget,
+
+            text.c_str()
+
+        );
+
+    }
+
+    int32_t input_get(
+
+        fossil_io_cube_widget_t *widget,
+
+        std::string &text
+
+    )
+
+    {
+
+        char buffer[FOSSIL_IO_CUBE_MAX_TEXT];
+
+        int32_t result =
+
+            fossil_io_cube_input_get(
+
+                widget,
+
+                buffer,
+
+                sizeof(buffer)
+
+            );
+
+        if (result == 0)
+
+            text = buffer;
+
+        return result;
+
+    }
+
+    int32_t input_cursor(
+
+        fossil_io_cube_widget_t *widget,
+
+        size_t position
+
+    )
+
+    {
+
+        return fossil_io_cube_input_cursor(
+
+            widget,
+
+            position
+
+        );
+
+    }
+
+    int32_t message(
+
+        const std::string &title,
+
+        const std::string &message,
+
+        const std::string &style
+
+    )
+
+    {
+
+        return fossil_io_cube_message(
+
+            cube_,
+
+            title.c_str(),
+
+            message.c_str(),
+
+            style.c_str()
+
+        );
+
+    }
+
+    int32_t confirm(
+
+        const std::string &title,
+
+        const std::string &message,
+
+        std::string &result
+
+    )
+
+    {
+
+        char buffer[FOSSIL_IO_CUBE_MAX_ID];
+
+        int32_t status =
+
+            fossil_io_cube_confirm(
+
+                cube_,
+
+                title.c_str(),
+
+                message.c_str(),
+
+                buffer,
+
+                sizeof(buffer)
+
+            );
+
+        if (status == 0)
+
+            result = buffer;
+
+        return status;
+
+    }
+
+    int32_t status(
+
+        const std::string &text
+
+    )
+
+    {
+
+        return fossil_io_cube_status(
+
+            cube_,
+
+            text.c_str()
+
+        );
+
+    }
+
+    std::string status_get() const
+
+    {
+
+        const char *text =
+
+            fossil_io_cube_status_get(cube_);
+
+        return text ? std::string(text) : std::string();
+
+    }
+
+    std::string active() const
+
+    {
+
+        const char *id =
+
+            fossil_io_cube_active(cube_);
+
+        return id ? std::string(id) : std::string();
+
+    }
+
+    int32_t activate(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_activate(
+
+            cube_,
+
+            id.c_str()
+
+        );
+
+    }
+
+    static int32_t validate_id(
+
+        const std::string &id
+
+    )
+
+    {
+
+        return fossil_io_cube_validate_id(
+
+            id.c_str()
+
+        );
+
+    }
+
+    static int32_t option_valid(
+
+        const std::string &value,
+
+        const char *options[]
+
+    )
+
+    {
+
+        return fossil_io_cube_option_valid(
+
+            value.c_str(),
+
+            options
+
+        );
+
+    }
+
+    fossil_io_cube_t *native_handle()
+
+    {
+
+        return cube_;
+
+    }
+
+private:
+
+    fossil_io_cube_t *cube_;
+
+};
+
+}
 
 #endif
 
