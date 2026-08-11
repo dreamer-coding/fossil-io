@@ -284,10 +284,10 @@ struct fossil_io_cube_t
  * Internal Helpers
  * ------------------------------------------------------------ */
 
-static int cube_string_valid(const char *value)
-{
-    return value != NULL && value[0] != '\0';
-}
+// static int cube_string_valid(const char *value)
+// {
+//     return value != NULL && value[0] != '\0';
+// }
 
 
 static int cube_string_copy(
