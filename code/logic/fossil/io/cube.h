@@ -35,19 +35,13 @@ extern "C"
 #endif
 
 /* ------------------------------------------------------------
-
  * Core Limits
-
  * ------------------------------------------------------------ */
 
 #define FOSSIL_IO_CUBE_MAX_ID       128
-
 #define FOSSIL_IO_CUBE_MAX_TEXT     4096
-
 #define FOSSIL_IO_CUBE_MAX_CHILDREN 256
-
 #define FOSSIL_IO_CUBE_MAX_COLUMNS  256
-
 #define FOSSIL_IO_CUBE_MAX_ROWS     256
 
 /* ------------------------------------------------------------
