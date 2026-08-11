@@ -5,12 +5,9 @@
  * Cube TUI test suite.
  * -----------------------------------------------------------------------------
  */
-
 #include <fossil/maip/framework.h>
-#include <string.h>
 
 #include "fossil/io/framework.h"
-#include "fossil/io/cube.h"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * *
