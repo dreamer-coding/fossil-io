@@ -13,7 +13,8 @@ fossil_io_lib = library('fossil_io',
         'soap.c',
         'filesys.c',
         'cstring.c',
-        'cipher.c'
+        'cipher.c',
+        'cube.c'
     ),
     install: true,
     dependencies: [cc.find_library('m', required: false)],
