@@ -30,6 +30,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <sys/ioctl.h>
 
 int32_t FOSSIL_IO_COLOR_ENABLE = 1;  // Flag to enable/disable color output
 int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing
@@ -985,4 +986,81 @@ void fossil_io_flush(void)
     if (!FOSSIL_IO_OUTPUT_ENABLE)
         return;
     fossil_io_filesys_file_flush(FOSSIL_STDOUT);
+}
+
+/**
+ * Draws a rectangular box using a specified character.
+ *
+ * @param row The starting row (1-based) for the top-left corner.
+ * @param col The starting column (1-based) for the top-left corner.
+ * @param height The height of the box (number of rows).
+ * @param width The width of the box (number of columns).
+ * @param ch The character to use for the border.
+ */
+void fossil_io_draw_box(int row, int col, int height, int width, char ch)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
+
+    // Draw top border
+    fossil_io_move_cursor(row, col);
+    for (int i = 0; i < width; ++i)
+    {
+        fossil_io_filesys_file_write(FOSSIL_STDOUT, &ch, 1, 1);
+    }
+
+    // Draw sides
+    for (int i = 1; i < height - 1; ++i)
+    {
+        fossil_io_move_cursor(row + i, col);
+        fossil_io_filesys_file_write(FOSSIL_STDOUT, &ch, 1, 1); // Left side
+        fossil_io_move_cursor(row + i, col + width - 1);
+        fossil_io_filesys_file_write(FOSSIL_STDOUT, &ch, 1, 1); // Right side
+    }
+
+    // Draw bottom border
+    fossil_io_move_cursor(row + height - 1, col);
+    for (int i = 0; i < width; ++i)
+    {
+        fossil_io_filesys_file_write(FOSSIL_STDOUT, &ch, 1, 1);
+    }
+}
+
+/**
+ * Clears a single line at the specified row.
+ *
+ * @param row The row to clear (1-based).
+ */
+void fossil_io_clear_line(int row)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return;
+    fossil_io_move_cursor(row, 1);
+    fossil_io_filesys_file_write(FOSSIL_STDOUT, "\033[K", 4, 4);
+}
+
+/**
+ * Retrieves the terminal size in rows and columns.
+ *
+ * @param rows Pointer to an int to receive the number of rows.
+ * @param cols Pointer to an int to receive the number of columns.
+ * @return 0 on success, non-zero on failure.
+ */
+int fossil_io_get_term_size(int *rows, int *cols)
+{
+    if (!FOSSIL_IO_OUTPUT_ENABLE)
+        return -1;
+
+    struct winsize w;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == -1)
+    {
+        return -1; // Failed to get terminal size
+    }
+
+    if (rows)
+        *rows = w.ws_row;
+    if (cols)
+        *cols = w.ws_col;
+
+    return 0; // Success
 }

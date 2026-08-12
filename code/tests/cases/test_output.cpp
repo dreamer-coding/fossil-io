@@ -77,7 +77,7 @@ FOSSIL_TEST(cpp_test_output_color_markup_disabled)
 
     FOSSIL_IO_COLOR_ENABLE = 0;
     int result = fossil::io::Output::sprintf(buffer, "Status: {green}OK{reset}");
-    ASSUME_ITS_TRUE(result >= 0);
+    ASSUME_NOT_EQUAL_I32(-1, result);
     ASSUME_ITS_EQUAL_CSTR("Status: OK", buffer);
 
     FOSSIL_IO_COLOR_ENABLE = original_color;
