@@ -30,7 +30,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#if defined(__unix__) || defined(__APPLE__) || defined(__linux__)
 #include <sys/ioctl.h>
+#endif
 
 int32_t FOSSIL_IO_COLOR_ENABLE = 1;  // Flag to enable/disable color output
 int32_t FOSSIL_IO_OUTPUT_ENABLE = 1; // Can disable output during unit testing
