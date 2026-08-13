@@ -305,33 +305,6 @@ void fossil_io_draw_vertical_line(int length, char ch);
  */
 void fossil_io_flush(void);
 
-/**
- * Draws a rectangular box using a specified character.
- *
- * @param row The starting row (1-based) for the top-left corner.
- * @param col The starting column (1-based) for the top-left corner.
- * @param height The height of the box (number of rows).
- * @param width The width of the box (number of columns).
- * @param ch The character to use for the border.
- */
-void fossil_io_draw_box(int row, int col, int height, int width, char ch);
-
-/**
- * Clears a single line at the specified row.
- *
- * @param row The row to clear (1-based).
- */
-void fossil_io_clear_line(int row);
-
-/**
- * Retrieves the terminal size in rows and columns.
- *
- * @param rows Pointer to an int to receive the number of rows.
- * @param cols Pointer to an int to receive the number of columns.
- * @return 0 on success, non-zero on failure.
- */
-int fossil_io_get_term_size(int *rows, int *cols);
-
 #ifdef __cplusplus
 }
 
